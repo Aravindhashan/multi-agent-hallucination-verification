@@ -1,0 +1,140 @@
+{
+  "version": "1.0",
+  "documents": [
+    {
+      "id": "doc_geo_001",
+      "title": "Capital of France",
+      "text": "Paris is the official capital and most populous city of France, located along the Seine River in the north-central part of the country.",
+      "source": "World Factbook",
+      "source_url": "https://factbook.example.org/countries/france",
+      "domain": "factbook.example.org",
+      "published_date": "2023-01-10"
+    },
+    {
+      "id": "doc_geo_002",
+      "title": "Paris Overview",
+      "text": "Paris is the capital of France and serves as the nation major political, cultural, and commercial center.",
+      "source": "Global Geography Encyclopedia",
+      "source_url": "https://encyclopedia.example.org/geography/paris",
+      "domain": "encyclopedia.example.org",
+      "published_date": "2023-04-12"
+    },
+    {
+      "id": "doc_geo_003_dup",
+      "title": "Syndicated Geography: Capital of France",
+      "text": "Paris is the official capital and most populous city of France, located along the Seine River in the north-central part of the country.",
+      "source": "Regional News Wire",
+      "source_url": "https://news.example.com/world/france-capital",
+      "domain": "news.example.com",
+      "published_date": "2023-01-15"
+    },
+    {
+      "id": "doc_sci_001",
+      "title": "Speed of Light in Vacuum",
+      "text": "The speed of light in vacuum is an exact universal physical constant defined as 299,792,458 metres per second.",
+      "source": "International Bureau of Weights and Measures",
+      "source_url": "https://bipm.example.org/si/speed-of-light",
+      "domain": "bipm.example.org",
+      "published_date": "2022-05-20"
+    },
+    {
+      "id": "doc_sci_002",
+      "title": "Photosynthesis Fundamentals",
+      "text": "Photosynthesis is the biochemical process by which green plants, algae, and cyanobacteria convert light energy into chemical energy stored in glucose, releasing oxygen gas as a byproduct.",
+      "source": "Plant Biology Journal",
+      "source_url": "https://plantbio.example.org/articles/photosynthesis-core",
+      "domain": "plantbio.example.org",
+      "published_date": "2023-08-14"
+    },
+    {
+      "id": "doc_sci_003_dup",
+      "title": "Light Speed Physical Constant",
+      "text": "The speed of light in vacuum is an exact universal physical constant defined as 299,792,458 metres per second.",
+      "source": "Physics Reference Online",
+      "source_url": "https://physics-ref.example.edu/constants/c",
+      "domain": "physics-ref.example.edu",
+      "published_date": "2022-09-01"
+    },
+    {
+      "id": "doc_hist_001",
+      "title": "Apollo 11 Moon Landing",
+      "text": "Apollo 11 was the American spaceflight that first landed humans on the Moon on July 20, 1969, with astronauts Neil Armstrong and Buzz Aldrin.",
+      "source": "NASA History Division",
+      "source_url": "https://nasa-history.example.gov/missions/apollo-11",
+      "domain": "nasa-history.example.gov",
+      "published_date": "2021-07-20"
+    },
+    {
+      "id": "doc_hist_002",
+      "title": "Signing of the United States Declaration of Independence",
+      "text": "The United States Declaration of Independence was formally adopted by the Second Continental Congress on July 4, 1776, in Philadelphia, Pennsylvania.",
+      "source": "National Archives Records",
+      "source_url": "https://archives.example.gov/declaration",
+      "domain": "archives.example.gov",
+      "published_date": "2020-07-04"
+    },
+    {
+      "id": "doc_hist_003",
+      "title": "Fall of the Berlin Wall",
+      "text": "The Berlin Wall, which divided East and West Berlin during the Cold War, was opened on November 9, 1989, paving the way for German reunification.",
+      "source": "European Modern History Archive",
+      "source_url": "https://history-archive.example.eu/berlin-wall-1989",
+      "domain": "history-archive.example.eu",
+      "published_date": "2022-11-09"
+    },
+    {
+      "id": "doc_tech_001",
+      "title": "Python Programming Language Release",
+      "text": "Python is a high-level, general-purpose programming language conceived in the late 1980s by Guido van Rossum and first released in 1991.",
+      "source": "Computing History Foundation",
+      "source_url": "https://comp-history.example.org/languages/python",
+      "domain": "comp-history.example.org",
+      "published_date": "2023-02-28"
+    },
+    {
+      "id": "doc_tech_002",
+      "title": "World Wide Web Invention",
+      "text": "Tim Berners-Lee invented the World Wide Web in 1989 while working at CERN, developing the first web browser and web server protocols.",
+      "source": "CERN Historical Archives",
+      "source_url": "https://cern-archives.example.ch/www-birth",
+      "domain": "cern-archives.example.ch",
+      "published_date": "2021-03-12"
+    },
+    {
+      "id": "doc_med_001",
+      "title": "Discovery of Penicillin",
+      "text": "Alexander Fleming discovered penicillin in September 1928 at St Mary Hospital in London after observing antibacterial properties in Penicillium notatum mold.",
+      "source": "Medical Heritage Institute",
+      "source_url": "https://medical-heritage.example.org/discoveries/penicillin",
+      "domain": "medical-heritage.example.org",
+      "published_date": "2022-09-28"
+    },
+    {
+      "id": "doc_med_002_dup",
+      "title": "Penicillin Antibiotic History",
+      "text": "Alexander Fleming discovered penicillin in September 1928 at St Mary Hospital in London after observing antibacterial properties in Penicillium notatum mold.",
+      "source": "Pharmacology Review Daily",
+      "source_url": "https://pharm-review.example.com/penicillin-history",
+      "domain": "pharm-review.example.com",
+      "published_date": "2023-03-10"
+    },
+    {
+      "id": "doc_astro_001",
+      "title": "Jupiter Planetary Characteristics",
+      "text": "Jupiter is the fifth planet from the Sun and the largest in the Solar System, with a mass more than two and a half times that of all the other planets combined.",
+      "source": "Planetary Science Institute",
+      "source_url": "https://planetary-science.example.org/jupiter",
+      "domain": "planetary-science.example.org",
+      "published_date": "2023-06-15"
+    },
+    {
+      "id": "doc_lit_001",
+      "title": "William Shakespeare Playwright",
+      "text": "William Shakespeare was an English playwright, poet, and actor, widely regarded as the greatest writer in the English language, born in Stratford-upon-Avon in 1564.",
+      "source": "Literary Reference Database",
+      "source_url": "https://lit-db.example.org/shakespeare",
+      "domain": "lit-db.example.org",
+      "published_date": "2021-04-23"
+    }
+  ]
+}

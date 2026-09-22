@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Databases and Local Runtime State
+*.db
+*.sqlite
+*.sqlite3
+backend/data/pipeline_sessions.db
+backend/data/indexes/
+
+# IDE & Editor Artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Artifacts
+.DS_Store
+Thumbs.db

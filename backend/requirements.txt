@@ -1,0 +1,16 @@
+fastapi>=0.115.0,<1.0.0
+uvicorn[standard]>=0.30.0,<1.0.0
+pydantic>=2.8.0,<3.0.0
+httpx>=0.27.0
+openai>=1.30.0
+
+numpy
+scikit-learn
+rank-bm25
+faiss-cpu
+
+sentence-transformers
+torch
+transformers
+
+pytest

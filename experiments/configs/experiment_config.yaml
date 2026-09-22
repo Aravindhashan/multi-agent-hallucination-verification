@@ -1,0 +1,35 @@
+# Experiment Configuration: Pre-Module-5 Research Validation
+experiment_name: "pre_module_5_research_validation"
+seed: 42
+
+dataset:
+  num_claims: 120
+  domains:
+    - science
+    - history
+    - technology
+    - news
+  claims_per_domain: 30
+  evidence_per_claim: 5
+  dependence_levels: [0, 20, 40, 60, 80, 100]
+  word_count_min: 50
+  word_count_max: 250
+  output_dir: "experiments/datasets/generated"
+
+evaluation:
+  num_calibration_bins: 10
+  bootstrap_iterations: 1000
+  primary_dependence_level: 60
+  significance_threshold: 0.05
+  effect_size_threshold: 0.05
+
+systems:
+  - "A0"  # All evidence (ceiling)
+  - "A1"  # Dedup-only (lexical text/URL dedup)
+  - "A2"  # Independence-aware (Module 4.3 complete-linkage clustering)
+  - "A3"  # Independence + Pollution (Module 4.3 + Module 4.4 gate)
+
+paths:
+  raw_results_dir: "experiments/results/raw"
+  processed_results_dir: "experiments/results/processed"
+  figures_dir: "experiments/results/figures"
