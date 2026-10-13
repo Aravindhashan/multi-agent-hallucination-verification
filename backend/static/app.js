@@ -142,16 +142,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         overallVerdict.textContent = data.overall_verdict;
+        let verdictContext = '';
         if (data.overall_verdict === 'SUPPORTED') {
             overallVerdict.className = 'text-2xl font-bold text-green-600 mt-1';
         } else if (data.overall_verdict === 'REFUTED') {
             overallVerdict.className = 'text-2xl font-bold text-red-600 mt-1';
+        } else if (data.overall_verdict === 'PARTIALLY_SUPPORTED') {
+            overallVerdict.className = 'text-2xl font-bold text-yellow-600 mt-1';
+            const refCount = data.refuted_count || 0;
+            const supCount = data.supported_count || 0;
+            const neiCount = data.unverified_count || 0;
+            if (refCount === 0) {
+                verdictContext = ` · Partially Verified (${supCount} Supported, ${neiCount} Unverified, 0 Refuted)`;
+            } else {
+                verdictContext = ` · Contradictions Detected (${supCount} Supported, ${refCount} Refuted)`;
+            }
         } else {
             overallVerdict.className = 'text-2xl font-bold text-yellow-600 mt-1';
         }
 
         const confidence = data.confidence_score !== undefined ? data.confidence_score : 0;
-        confidenceScore.textContent = `Aggregated Confidence: ${(confidence * 100).toFixed(0)}%`;
+        confidenceScore.textContent = `Aggregated Confidence: ${(confidence * 100).toFixed(0)}%${verdictContext}`;
         claimsCount.textContent = data.claim_count !== undefined ? data.claim_count : (data.claims || []).length;
         
         // 1. Render Aggregated Internet Sources Panel
@@ -284,8 +295,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }).join('');
                 } else {
                     opposingHTML = `
-                        <div class="text-xs text-gray-500 italic p-3 text-center bg-white/70 rounded-lg border border-dashed border-gray-200 flex items-center justify-center gap-1.5">
-                            <i class="fas fa-shield-halved text-gray-400"></i> No opposing claims found on the web.
+                        <div class="text-xs text-gray-600 p-3 text-center bg-white/70 rounded-lg border border-dashed border-gray-200 flex items-center justify-center gap-2">
+                            <i class="fas fa-shield-halved text-green-600"></i> No opposing claims found (Prosecutor confirmed adherence to consensus).
                         </div>
                     `;
                 }
