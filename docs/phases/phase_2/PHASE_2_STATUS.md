@@ -8,13 +8,14 @@ Phase 2 implements the cross-encoder natural language inference (NLI) backbone, 
 ## Step Breakdown & Implementation Progress
 
 ### Step 2.1: DeBERTa Cross-Encoder NLI Engine
-- **Status**: COMPLETE
+- **Status**: COMPLETE (Enhanced)
 - **Deliverables**:
   - `app/services/nli_models.py`: `NLIResult`, `NLILabel`, `NLIError`, `NLIConfigurationError`, `NLIModelLoadError`, `NLIInferenceError`, `NLIInputError`.
-  - `app/services/nli_config.py`: `NLISettings` configuration dataclass.
-  - `app/services/nli_engine.py`: `NLIEngine` cross-encoder service with full cross-attention inference, batch chunking, dynamic label resolution, probability contract enforcement, and singleton management (`get_nli_engine`, `reset_nli_engine`).
-  - `tests/test_nli_engine.py` & `tests/test_nli_label_mapping.py`: 23 comprehensive tests (mocked fast tests + live DeBERTa-v3 probe test).
-- **Verified Baseline**: 119 / 119 tests passing (96 Phase 1 baseline + 23 Step 2.1 tests).
+  - `app/services/nli_config.py`: `NLISettings` configuration dataclass (including sentence window settings).
+  - `app/services/sentence_window.py`: Zero-dependency claim-aware sentence segmentation, multi-signal heuristic relevance scoring, and window extraction (`select_best_sentence_window`).
+  - `app/services/nli_engine.py`: `NLIEngine` cross-encoder service with full cross-attention inference, batch chunking, dynamic label resolution, raw input logging & token tracking, claim-aware sentence window extraction, probability contract enforcement, and singleton management (`get_nli_engine`, `reset_nli_engine`).
+  - `tests/test_nli_engine.py`, `tests/test_nli_label_mapping.py`, `tests/test_nli_sanity_direct.py`, `tests/test_raw_inputs_logging.py`, `tests/test_sentence_window.py`: Comprehensive test suites verifying raw DeBERTa-v3 sanity, directionality asymmetry, raw token metrics, and sentence window selection accuracy.
+- **Verified Baseline**: 100% passing across all NLI, Sentence Window, Cluster Pooling, and Adjudication test suites.
 
 ### Step 2.2: Evidence Quality & Temporal Relevance Scorer
 - **Status**: PENDING (Ready to start)

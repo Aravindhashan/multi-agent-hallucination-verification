@@ -13,6 +13,10 @@ SOURCE_CRED_W_TYPE: float = 0.20
 SOURCE_CRED_W_PROVENANCE: float = 0.30
 
 # Tier 1: High authority domains and official public sector/educational TLDs
+# Architectural Note: Suffix '.int' covers international treaty organizations
+# including the World Health Organization (who.int), World Intellectual Property Organization (wipo.int),
+# and United Nations entities. who.int was intentionally removed from Tier 2 to prevent an accidental
+# duplicate downgrade, ensuring all legitimate .int domains are deterministically classified as Tier 1 (1.00 authority).
 SOURCE_CRED_TIER1_SUFFIXES: tuple[str, ...] = (
     ".gov",
     ".mil",

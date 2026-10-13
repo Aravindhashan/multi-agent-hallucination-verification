@@ -58,13 +58,40 @@ The system decomposes LLM responses into independently verifiable atomic claims,
 - **Prosecutor Agent** (`POST /api/v1/prosecute-claim`): Retrieves counter-evidence using `HybridRetriever` with `contradicting` stance.
 - Dependency injection wired cleanly via FastAPI `Depends(get_evidence_retriever)` allowing mock overrides in testing.
 
-### 8. Cross-Encoder NLI Engine
-- DeBERTa-v3 cross-encoder (`cross-encoder/nli-deberta-v3-small`) providing pairwise premise-hypothesis entailment, contradiction, and neutral classification with confidence calibration.
+### 8. Module 7: Federated Multi-Turn Evidentiary Debate
+- **Endpoint**: `POST /api/v1/debate`
+- Dynamic multi-round adversarial debate between Defender and Prosecutor.
+- **Federated Evidence Engine**: Queries local curated benchmarks (PubMed/SciFact BM25, FEVER) and escalates to live web retrieval (DuckDuckGo + Wikipedia full plain-text lead paragraphs) when local evidence falls below the escalation confidence threshold.
+- Persistent SQLite web caching (`backend/data/web_cache.db`) eliminates redundant network requests with zero API subscription cost ($0.00).
 
-### 9. Session State Management
-- In-memory thread-safe `SessionStore` tracking multi-turn queries, claims, retrieved evidence, and quality audit logs.
+### 9. Module 8: Evidence Quality Firewall & Cluster Representative Pooling
+- Deduplicates and clusters evidence via complete-linkage Jaccard similarity.
+- Computes Kish Effective Sample Size ($n_{\text{eff}}$) to guard against cross-source syndication and redundant copies.
+- Identifies winning cluster representatives ($e_k^*$) to eliminate duplicate downstream inference calls.
 
-### 10. Centralized Configuration
+### 10. Module 9: Cross-Encoder NLI Engine & Sentence-Window Adjudication
+- **Endpoint**: `POST /api/v1/adjudicate-claim`
+- DeBERTa-v3 cross-encoder (`MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli`) evaluates premise-hypothesis entailment, contradiction, and neutral classification.
+- **Claim-Aware Sentence Windowing** (`select_best_sentence_window`): Dynamically extracts the most relevant 1–3 sentence window from evidence passages, avoiding raw snippet truncation and speeding up CPU inference.
+
+### 11. Module 10 & 11: Master End-to-End Verification Pipeline & Decoupled Metrics
+- **Endpoint**: `POST /api/v1/verify`
+- Master pipeline executing decomposition, complexity planning, federated debate, quality firewalling, NLI cross-encoder adjudication, and Bayesian rollup.
+- **Decoupled H-Index Formulation**:
+  - **Factual Hallucination Index ($H_{\text{refuted}}$)**: Calibrated risk of verified factual falsehoods:
+    $$H_{\text{refuted}} = \frac{1}{|C|} \sum_{c \in C_{\text{refuted}}} \max(0.75, \text{confidence}_c)$$
+  - **Epistemic Coverage Gap ($U_{\text{unverified}}$)**: Tracks ungrounded or neutral claims without mislabeling them as hallucinations:
+    $$U_{\text{unverified}} = \frac{1}{|C|} \sum_{c \in C_{\text{unverified}}} \max(0.50, P_{\text{neutral}, c})$$
+  - Ensures corpus-agnostic calibration across PubMed, Wikipedia, and live search.
+
+### 12. Module 12: Interactive Web UI Dashboard
+- Built-in lightweight web interface served at `http://127.0.0.1:8000/`.
+- Features real-time verification status, dual-metric badge cards (Hallucination Index & Coverage Gap), live debate stream, and full evidence provenance viewer.
+
+### 13. Session State Management
+- In-memory thread-safe `SessionStore` backed by SQLite tracking multi-turn queries, claims, retrieved evidence, and quality audit logs.
+
+### 14. Centralized Configuration
 - Centralized thresholds, word limits, domain tiers, and weights in `app/config.py`.
 
 ---

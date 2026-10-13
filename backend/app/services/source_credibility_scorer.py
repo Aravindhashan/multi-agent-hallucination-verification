@@ -159,6 +159,7 @@ class SourceCredibilityScorer:
         doc_id = (
             self._extract_field(document, "document_id")
             or self._extract_field(document, "id")
+            or self._extract_field(document, "evidence_id")
             or "unknown_doc"
         )
         doc_id_str = str(doc_id).strip()
@@ -182,7 +183,11 @@ class SourceCredibilityScorer:
         present_count = 0
         for f_name in considered_fields:
             if f_name == "document_id":
-                val = self._extract_field(document, "document_id") or self._extract_field(document, "id")
+                val = (
+                    self._extract_field(document, "document_id")
+                    or self._extract_field(document, "id")
+                    or self._extract_field(document, "evidence_id")
+                )
             else:
                 val = self._extract_field(document, f_name)
 
@@ -298,11 +303,35 @@ class SourceCredibilityScorer:
             model_version=self.settings.model_version,
         )
 
-    def score_batch(self, documents: Sequence[Any]) -> list[SourceCredibilityResult]:
-        """Score a collection of documents preserving input order."""
+    def score_batch(
+        self,
+        documents: Sequence[Any],
+        batch_size: int = 10,
+    ) -> list[SourceCredibilityResult]:
+        """Score a collection of documents preserving input order with memory-safe chunked batching.
+
+        Args:
+            documents: Sequence of document objects, dicts, or Pydantic models.
+            batch_size: Maximum chunk size for processing (default 10). Must be an integer >= 1.
+
+        Returns:
+            List of SourceCredibilityResult matching the exact sequence of documents.
+
+        Raises:
+            SourceCredibilityInputError: If batch_size < 1 or not an integer.
+        """
+        if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
+            raise SourceCredibilityInputError(
+                f"batch_size must be an integer >= 1, got {batch_size!r}"
+            )
         if not documents:
             return []
-        return [self.score(doc) for doc in documents]
+        doc_list = list(documents)
+        results: list[SourceCredibilityResult] = []
+        for i in range(0, len(doc_list), batch_size):
+            chunk = doc_list[i : i + batch_size]
+            results.extend(self.score(doc) for doc in chunk)
+        return results
 
 
 # ---------------------------------------------------------------------------

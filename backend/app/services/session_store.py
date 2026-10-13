@@ -210,7 +210,13 @@ class PipelineSessionStore:
         """Attach extracted claims to an existing session and populate session_claims rows."""
         ext_dt = extracted_at if extracted_at is not None else datetime.now(timezone.utc)
         ext_str = ext_dt.isoformat()
-        claims_json = json.dumps(claims)
+        serialized_claims = [
+            c.model_dump() if hasattr(c, "model_dump")
+            else c.dict() if hasattr(c, "dict")
+            else c
+            for c in claims
+        ]
+        claims_json = json.dumps(serialized_claims, default=str)
 
         with self._lock:
             with self._conn:
@@ -231,20 +237,32 @@ class PipelineSessionStore:
                     if isinstance(c, dict):
                         cid = str(c.get("claim_id") or c.get("id") or "")
                         ctext = str(c.get("claim_text") or c.get("text") or "")
+                        t_anc = c.get("temporal_anchors") or ([c["temporal_anchor"]] if c.get("temporal_anchor") else [])
+                        n_val = c.get("numerical_values") or ([c["numerical_value"]] if c.get("numerical_value") else [])
+                        s_anc = c.get("spatial_anchors") or ([c["spatial_anchor"]] if c.get("spatial_anchor") else [])
                     else:
                         cid = str(getattr(c, "claim_id", getattr(c, "id", "")))
                         ctext = str(getattr(c, "claim_text", getattr(c, "text", "")))
+                        t_anc = getattr(c, "temporal_anchors", None) or ([getattr(c, "temporal_anchor")] if getattr(c, "temporal_anchor", None) else [])
+                        n_val = getattr(c, "numerical_values", None) or ([getattr(c, "numerical_value")] if getattr(c, "numerical_value", None) else [])
+                        s_anc = getattr(c, "spatial_anchors", None) or ([getattr(c, "spatial_anchor")] if getattr(c, "spatial_anchor", None) else [])
                     if cid and ctext:
+                        claim_meta = {
+                            "temporal_anchors": t_anc,
+                            "numerical_values": n_val,
+                            "spatial_anchors": s_anc,
+                        }
                         self._conn.execute(
                             """
                             INSERT INTO session_claims (
-                                query_id, claim_id, claim_text, created_at, updated_at
-                            ) VALUES (?, ?, ?, ?, ?)
+                                query_id, claim_id, claim_text, metadata_json, created_at, updated_at
+                            ) VALUES (?, ?, ?, ?, ?, ?)
                             ON CONFLICT(query_id, claim_id) DO UPDATE SET
                                 claim_text = excluded.claim_text,
+                                metadata_json = excluded.metadata_json,
                                 updated_at = excluded.updated_at
                             """,
-                            (str(query_id), cid, ctext, now_str, now_str),
+                            (str(query_id), cid, ctext, json.dumps(claim_meta), now_str, now_str),
                         )
             return self.get_session(query_id)
 
@@ -317,21 +335,49 @@ class PipelineSessionStore:
                     ),
                 )
 
+    def record_claim_ablation_log(
+        self,
+        query_id: UUID,
+        claim_id: str | UUID,
+        ablation_log: dict[str, Any],
+    ) -> None:
+        """Persist planning ablation log per (query_id, claim_id) into session_claims table."""
+        now_str = datetime.now(timezone.utc).isoformat()
+        ablation_json = json.dumps(ablation_log)
+        with self._lock:
+            with self._conn:
+                self._conn.execute(
+                    """
+                    INSERT INTO session_claims (query_id, claim_id, claim_text, ablation_log_json, created_at, updated_at)
+                    VALUES (?, ?, '', ?, ?, ?)
+                    ON CONFLICT(query_id, claim_id) DO UPDATE SET
+                        ablation_log_json = excluded.ablation_log_json,
+                        updated_at = excluded.updated_at
+                    """,
+                    (str(query_id), str(claim_id), ablation_json, now_str, now_str),
+                )
+
     def record_claim_evidence(
         self,
         query_id: UUID,
         claim_id: str | UUID,
         evidence_type: str,
         evidence: list[dict[str, Any]],
+        query_used: str | None = None,
+        baseline_query: str | None = None,
+        raw_evidence_count: int | None = None,
+        retained_evidence_count: int | None = None,
+        ablation_log: dict[str, Any] | None = None,
     ) -> None:
         """Record supporting or contradicting evidence for a specific claim."""
         now_str = datetime.now(timezone.utc).isoformat()
-        ev_json = json.dumps(evidence)
+        ev_json = json.dumps(evidence, default=str)
         col = (
             "supporting_evidence_json"
             if evidence_type == "supporting"
             else "contradicting_evidence_json"
         )
+        ablation_json = json.dumps(ablation_log) if ablation_log else None
 
         with self._lock:
             with self._conn:
@@ -344,13 +390,326 @@ class PipelineSessionStore:
                     """,
                     (str(query_id), str(claim_id), now_str, now_str),
                 )
+                meta_cur = self._conn.execute(
+                    "SELECT metadata_json FROM session_claims WHERE query_id = ? AND claim_id = ?",
+                    (str(query_id), str(claim_id)),
+                )
+                meta_row = meta_cur.fetchone()
+                claim_meta = {}
+                if meta_row and meta_row[0]:
+                    try:
+                        claim_meta = json.loads(meta_row[0])
+                    except Exception:
+                        claim_meta = {}
+
+                has_meta_updates = False
+                if query_used:
+                    key = "defender_query_used" if evidence_type == "supporting" else "prosecutor_query_used"
+                    claim_meta[key] = query_used
+                    has_meta_updates = True
+                if baseline_query:
+                    bkey = "defender_baseline_query" if evidence_type == "supporting" else "prosecutor_baseline_query"
+                    claim_meta[bkey] = baseline_query
+                    has_meta_updates = True
+                if raw_evidence_count is not None:
+                    rk = "raw_evidence_count" if evidence_type == "supporting" else "prosecutor_raw_evidence_count"
+                    claim_meta[rk] = raw_evidence_count
+                    has_meta_updates = True
+                if retained_evidence_count is not None:
+                    retk = "retained_evidence_count" if evidence_type == "supporting" else "prosecutor_retained_evidence_count"
+                    claim_meta[retk] = retained_evidence_count
+                    has_meta_updates = True
+                if ablation_log is not None:
+                    akey = "defender_ablation_log" if evidence_type == "supporting" else "prosecutor_ablation_log"
+                    claim_meta[akey] = ablation_log
+                    has_meta_updates = True
+
+                ablation_clause = ", ablation_log_json = ?" if ablation_json else ""
+                params = [ev_json, json.dumps(claim_meta)]
+                if ablation_json:
+                    params.append(ablation_json)
+                params.extend([now_str, str(query_id), str(claim_id)])
+
                 self._conn.execute(
                     f"""
                     UPDATE session_claims
-                    SET {col} = ?, updated_at = ?
+                    SET {col} = ?, metadata_json = ?{ablation_clause}, updated_at = ?
                     WHERE query_id = ? AND claim_id = ?
                     """,
-                    (ev_json, now_str, str(query_id), str(claim_id)),
+                    tuple(params),
+                )
+
+    def record_claim_debate(
+        self,
+        query_id: UUID,
+        claim_id: str | UUID,
+        debate_response: Any,
+    ) -> None:
+        """Record consolidated multi-round debate evidence and audit metadata under (query_id, claim_id)."""
+        now_str = datetime.now(timezone.utc).isoformat()
+
+        if isinstance(debate_response, dict):
+            sup_ev = debate_response.get("final_supporting_evidence", [])
+            con_ev = debate_response.get("final_contradicting_evidence", [])
+            rounds_data = debate_response.get("rounds", [])
+            challenges_data = debate_response.get("final_challenges", [])
+            total_rounds = debate_response.get("total_rounds", 2)
+            early_stopped = debate_response.get("early_stopped", False)
+            jaccard = debate_response.get("jaccard_complementarity", 0.0)
+            lift = debate_response.get("incremental_evidence_lift_percent", 0.0)
+        else:
+            sup_ev = [
+                e.model_dump(mode="json") if hasattr(e, "model_dump") else e
+                for e in getattr(debate_response, "final_supporting_evidence", [])
+            ]
+            con_ev = [
+                e.model_dump(mode="json") if hasattr(e, "model_dump") else e
+                for e in getattr(debate_response, "final_contradicting_evidence", [])
+            ]
+            rounds_data = [
+                r.model_dump(mode="json") if hasattr(r, "model_dump") else r
+                for r in getattr(debate_response, "rounds", [])
+            ]
+            challenges_data = [
+                c.model_dump(mode="json") if hasattr(c, "model_dump") else c
+                for c in getattr(debate_response, "final_challenges", [])
+            ]
+            total_rounds = getattr(debate_response, "total_rounds", 2)
+            early_stopped = getattr(debate_response, "early_stopped", False)
+            jaccard = getattr(debate_response, "jaccard_complementarity", 0.0)
+            lift = getattr(debate_response, "incremental_evidence_lift_percent", 0.0)
+
+        sup_json = json.dumps(sup_ev, default=str)
+        con_json = json.dumps(con_ev, default=str)
+
+        with self._lock:
+            with self._conn:
+                # Ensure row exists
+                self._conn.execute(
+                    """
+                    INSERT INTO session_claims (query_id, claim_id, claim_text, created_at, updated_at)
+                    VALUES (?, ?, '', ?, ?)
+                    ON CONFLICT(query_id, claim_id) DO NOTHING
+                    """,
+                    (str(query_id), str(claim_id), now_str, now_str),
+                )
+
+                # Fetch existing metadata
+                meta_cur = self._conn.execute(
+                    "SELECT metadata_json FROM session_claims WHERE query_id = ? AND claim_id = ?",
+                    (str(query_id), str(claim_id)),
+                )
+                meta_row = meta_cur.fetchone()
+                claim_meta = {}
+                if meta_row and meta_row[0]:
+                    try:
+                        claim_meta = json.loads(meta_row[0])
+                    except Exception:
+                        claim_meta = {}
+
+                # Update debate audit metadata
+                claim_meta["debate"] = {
+                    "total_rounds": total_rounds,
+                    "early_stopped": early_stopped,
+                    "jaccard_complementarity": jaccard,
+                    "incremental_evidence_lift_percent": lift,
+                    "final_challenges": challenges_data,
+                    "rounds": rounds_data,
+                    "debated_at": now_str,
+                }
+                claim_meta["debate_rounds"] = rounds_data
+                claim_meta["jaccard_final"] = jaccard
+                claim_meta["incremental_evidence_lift_percent"] = lift
+                if len(rounds_data) >= 1:
+                    r1 = rounds_data[0]
+                    if isinstance(r1, dict):
+                        claim_meta["defender_round_1_query"] = r1.get("defender_query")
+                        claim_meta["prosecutor_round_1_query"] = r1.get("prosecutor_query")
+                        claim_meta["jaccard_round_1"] = r1.get("jaccard_complementarity")
+                if len(rounds_data) >= 2:
+                    r2 = rounds_data[1]
+                    if isinstance(r2, dict):
+                        claim_meta["defender_round_2_query"] = r2.get("defender_query")
+                        claim_meta["prosecutor_round_2_query"] = r2.get("prosecutor_query")
+                        claim_meta["jaccard_round_2"] = r2.get("jaccard_complementarity")
+
+                self._conn.execute(
+                    """
+                    UPDATE session_claims
+                    SET supporting_evidence_json = ?,
+                        contradicting_evidence_json = ?,
+                        metadata_json = ?,
+                        updated_at = ?
+                    WHERE query_id = ? AND claim_id = ?
+                    """,
+                    (
+                        sup_json,
+                        con_json,
+                        json.dumps(claim_meta),
+                        now_str,
+                        str(query_id),
+                        str(claim_id),
+                    ),
+                )
+
+    def record_claim_quality_audit(
+        self,
+        query_id: UUID | str,
+        claim_id: str | UUID,
+        quality_data: dict[str, Any],
+    ) -> None:
+        """Record evidence quality assessment into session_claims.metadata_json['evidence_quality']."""
+        now_str = datetime.now(timezone.utc).isoformat()
+        with self._lock:
+            with self._conn:
+                self._conn.execute(
+                    """
+                    INSERT INTO session_claims (query_id, claim_id, claim_text, created_at, updated_at)
+                    VALUES (?, ?, '', ?, ?)
+                    ON CONFLICT(query_id, claim_id) DO NOTHING
+                    """,
+                    (str(query_id), str(claim_id), now_str, now_str),
+                )
+                meta_cur = self._conn.execute(
+                    "SELECT metadata_json FROM session_claims WHERE query_id = ? AND claim_id = ?",
+                    (str(query_id), str(claim_id)),
+                )
+                meta_row = meta_cur.fetchone()
+                claim_meta = {}
+                if meta_row and meta_row[0]:
+                    try:
+                        claim_meta = json.loads(meta_row[0])
+                    except Exception:
+                        claim_meta = {}
+
+                claim_meta["evidence_quality"] = quality_data
+                self._conn.execute(
+                    """
+                    UPDATE session_claims
+                    SET metadata_json = ?, updated_at = ?
+                    WHERE query_id = ? AND claim_id = ?
+                    """,
+                    (json.dumps(claim_meta, default=str), now_str, str(query_id), str(claim_id)),
+                )
+
+    def record_cluster_pooling_audit(
+        self,
+        query_id: UUID | str,
+        claim_id: str | UUID,
+        pooling_data: dict[str, Any],
+    ) -> None:
+        """Record cluster representative pooling assessment into session_claims.metadata_json['cluster_pooling']."""
+        now_str = datetime.now(timezone.utc).isoformat()
+        with self._lock:
+            with self._conn:
+                self._conn.execute(
+                    """
+                    INSERT INTO session_claims (query_id, claim_id, claim_text, created_at, updated_at)
+                    VALUES (?, ?, '', ?, ?)
+                    ON CONFLICT(query_id, claim_id) DO NOTHING
+                    """,
+                    (str(query_id), str(claim_id), now_str, now_str),
+                )
+                meta_cur = self._conn.execute(
+                    "SELECT metadata_json FROM session_claims WHERE query_id = ? AND claim_id = ?",
+                    (str(query_id), str(claim_id)),
+                )
+                meta_row = meta_cur.fetchone()
+                claim_meta = {}
+                if meta_row and meta_row[0]:
+                    try:
+                        claim_meta = json.loads(meta_row[0])
+                    except Exception:
+                        claim_meta = {}
+
+                claim_meta["cluster_pooling"] = pooling_data
+                self._conn.execute(
+                    """
+                    UPDATE session_claims
+                    SET metadata_json = ?, updated_at = ?
+                    WHERE query_id = ? AND claim_id = ?
+                    """,
+                    (json.dumps(claim_meta, default=str), now_str, str(query_id), str(claim_id)),
+                )
+
+    def record_debate_quality_audit(
+        self,
+        query_id: UUID | str,
+        claim_id: str | UUID,
+        debate_quality_data: dict[str, Any],
+    ) -> None:
+        """Record dual-perspective debate quality assessment into session_claims.metadata_json['debate_quality']."""
+        now_str = datetime.now(timezone.utc).isoformat()
+        with self._lock:
+            with self._conn:
+                self._conn.execute(
+                    """
+                    INSERT INTO session_claims (query_id, claim_id, claim_text, created_at, updated_at)
+                    VALUES (?, ?, '', ?, ?)
+                    ON CONFLICT(query_id, claim_id) DO NOTHING
+                    """,
+                    (str(query_id), str(claim_id), now_str, now_str),
+                )
+                meta_cur = self._conn.execute(
+                    "SELECT metadata_json FROM session_claims WHERE query_id = ? AND claim_id = ?",
+                    (str(query_id), str(claim_id)),
+                )
+                meta_row = meta_cur.fetchone()
+                claim_meta = {}
+                if meta_row and meta_row[0]:
+                    try:
+                        claim_meta = json.loads(meta_row[0])
+                    except Exception:
+                        claim_meta = {}
+
+                claim_meta["debate_quality"] = debate_quality_data
+                self._conn.execute(
+                    """
+                    UPDATE session_claims
+                    SET metadata_json = ?, updated_at = ?
+                    WHERE query_id = ? AND claim_id = ?
+                    """,
+                    (json.dumps(claim_meta, default=str), now_str, str(query_id), str(claim_id)),
+                )
+
+    def record_claim_adjudication(
+        self,
+        query_id: UUID | str,
+        claim_id: str | UUID,
+        adjudication_data: dict[str, Any],
+    ) -> None:
+        """Record Module 9 cross-encoder adjudication and verdict into session_claims.metadata_json['adjudication']."""
+        now_str = datetime.now(timezone.utc).isoformat()
+        with self._lock:
+            with self._conn:
+                self._conn.execute(
+                    """
+                    INSERT INTO session_claims (query_id, claim_id, claim_text, created_at, updated_at)
+                    VALUES (?, ?, '', ?, ?)
+                    ON CONFLICT(query_id, claim_id) DO NOTHING
+                    """,
+                    (str(query_id), str(claim_id), now_str, now_str),
+                )
+                meta_cur = self._conn.execute(
+                    "SELECT metadata_json FROM session_claims WHERE query_id = ? AND claim_id = ?",
+                    (str(query_id), str(claim_id)),
+                )
+                meta_row = meta_cur.fetchone()
+                claim_meta = {}
+                if meta_row and meta_row[0]:
+                    try:
+                        claim_meta = json.loads(meta_row[0])
+                    except Exception:
+                        claim_meta = {}
+
+                claim_meta["adjudication"] = adjudication_data
+                self._conn.execute(
+                    """
+                    UPDATE session_claims
+                    SET metadata_json = ?, updated_at = ?
+                    WHERE query_id = ? AND claim_id = ?
+                    """,
+                    (json.dumps(claim_meta, default=str), now_str, str(query_id), str(claim_id)),
                 )
 
     def get_claim_records(self, query_id: UUID) -> list[dict[str, Any]]:
@@ -362,6 +721,13 @@ class PipelineSessionStore:
             )
             results = []
             for row in cur.fetchall():
+                row_meta = {}
+                if "metadata_json" in row.keys() and row["metadata_json"]:
+                    try:
+                        row_meta = json.loads(row["metadata_json"])
+                    except Exception:
+                        row_meta = {}
+
                 results.append({
                     "query_id": row["query_id"],
                     "claim_id": row["claim_id"],
@@ -369,9 +735,11 @@ class PipelineSessionStore:
                     "complexity_score": row["complexity_score"],
                     "verification_plan": json.loads(row["verification_plan_json"]) if row["verification_plan_json"] else [],
                     "requires_deep_verification": bool(row["requires_deep_verification"]) if row["requires_deep_verification"] is not None else None,
-                    "ablation_log": json.loads(row["ablation_log_json"]) if row["ablation_log_json"] else None,
+                    "ablation_log": json.loads(row["ablation_log_json"]) if row["ablation_log_json"] else (row_meta.get("prosecutor_ablation_log") or row_meta.get("defender_ablation_log")),
                     "supporting_evidence": json.loads(row["supporting_evidence_json"]) if row["supporting_evidence_json"] else [],
                     "contradicting_evidence": json.loads(row["contradicting_evidence_json"]) if row["contradicting_evidence_json"] else [],
+                    "adjudication": row_meta.get("adjudication"),
+                    "metadata": row_meta,
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
                 })
@@ -387,6 +755,13 @@ class PipelineSessionStore:
             row = cur.fetchone()
             if row is None:
                 return None
+            row_meta = {}
+            if "metadata_json" in row.keys() and row["metadata_json"]:
+                try:
+                    row_meta = json.loads(row["metadata_json"])
+                except Exception:
+                    row_meta = {}
+
             return {
                 "query_id": row["query_id"],
                 "claim_id": row["claim_id"],
@@ -394,9 +769,34 @@ class PipelineSessionStore:
                 "complexity_score": row["complexity_score"],
                 "verification_plan": json.loads(row["verification_plan_json"]) if row["verification_plan_json"] else [],
                 "requires_deep_verification": bool(row["requires_deep_verification"]) if row["requires_deep_verification"] is not None else None,
-                "ablation_log": json.loads(row["ablation_log_json"]) if row["ablation_log_json"] else None,
+                "ablation_log": json.loads(row["ablation_log_json"]) if row["ablation_log_json"] else (row_meta.get("prosecutor_ablation_log") or row_meta.get("defender_ablation_log")),
                 "supporting_evidence": json.loads(row["supporting_evidence_json"]) if row["supporting_evidence_json"] else [],
                 "contradicting_evidence": json.loads(row["contradicting_evidence_json"]) if row["contradicting_evidence_json"] else [],
+                "temporal_anchors": row_meta.get("temporal_anchors", []),
+                "numerical_values": row_meta.get("numerical_values", []),
+                "spatial_anchors": row_meta.get("spatial_anchors", []),
+                "defender_query_used": row_meta.get("defender_query_used"),
+                "defender_baseline_query": row_meta.get("defender_baseline_query"),
+                "raw_evidence_count": row_meta.get("raw_evidence_count"),
+                "retained_evidence_count": row_meta.get("retained_evidence_count"),
+                "prosecutor_query_used": row_meta.get("prosecutor_query_used"),
+                "prosecutor_baseline_query": row_meta.get("prosecutor_baseline_query"),
+                "prosecutor_raw_evidence_count": row_meta.get("prosecutor_raw_evidence_count"),
+                "prosecutor_retained_evidence_count": row_meta.get("prosecutor_retained_evidence_count"),
+                "prosecutor_ablation_log": row_meta.get("prosecutor_ablation_log"),
+                "debate": row_meta.get("debate"),
+                "debate_rounds": row_meta.get("debate_rounds", []),
+                "defender_round_1_query": row_meta.get("defender_round_1_query"),
+                "prosecutor_round_1_query": row_meta.get("prosecutor_round_1_query"),
+                "defender_round_2_query": row_meta.get("defender_round_2_query"),
+                "prosecutor_round_2_query": row_meta.get("prosecutor_round_2_query"),
+                "jaccard_final": row_meta.get("jaccard_final"),
+                "incremental_evidence_lift_percent": row_meta.get("incremental_evidence_lift_percent"),
+                "debate_quality": row_meta.get("debate_quality"),
+                "evidence_quality": row_meta.get("evidence_quality"),
+                "cluster_pooling": row_meta.get("cluster_pooling"),
+                "adjudication": row_meta.get("adjudication"),
+                "metadata": row_meta,
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"],
             }
@@ -424,7 +824,7 @@ class PipelineSessionStore:
                 meta[key] = value
                 self._conn.execute(
                     "UPDATE sessions SET metadata_json = ? WHERE query_id = ?",
-                    (json.dumps(meta), str(query_id)),
+                    (json.dumps(meta, default=str), str(query_id)),
                 )
             return self.get_session(query_id)
 

@@ -73,6 +73,26 @@ class NLIResult(BaseModel):
         default=False,
         description="Whether the input sequence was truncated during tokenization.",
     )
+    premise_text: str | None = Field(
+        default=None,
+        description="Exact premise text sent to DeBERTa cross-encoder.",
+    )
+    token_length: int | None = Field(
+        default=None,
+        description="Truncated token length of the input sequence evaluated by DeBERTa.",
+    )
+    raw_token_length: int | None = Field(
+        default=None,
+        description="Pre-truncation token length of the input sequence.",
+    )
+    selected_sentence_indices: list[int] | None = Field(
+        default=None,
+        description="0-indexed sentence indices extracted by sentence windowing from evidence passage.",
+    )
+    sentence_window_score: float | None = Field(
+        default=None,
+        description="Relevance matching score of the extracted sentence window against the claim.",
+    )
     model_name: str = Field(..., description="Name or path of the NLI model checkpoint used.")
     device: str = Field(..., description="Device used for inference ('cpu', 'cuda', 'mps', etc.).")
     inference_time_ms: float = Field(
@@ -142,3 +162,37 @@ class NLIResult(BaseModel):
             )
 
         return self
+
+
+# ---------------------------------------------------------------------------
+# Sentence-Level NLI & Max-Pooling Models
+# ---------------------------------------------------------------------------
+
+class SentencePrediction(BaseModel):
+    """NLI prediction and confidence for a single sentence within a document."""
+
+    doc_id: str | None = Field(default=None, description="Document ID the sentence belongs to.")
+    sentence_idx: int = Field(..., ge=0, description="0-indexed position of sentence in document.")
+    sentence_text: str = Field(..., description="Text of the evaluated sentence.")
+    p_entailment: float = Field(..., ge=0.0, le=1.0, description="Probability of entailment.")
+    p_neutral: float = Field(..., ge=0.0, le=1.0, description="Probability of neutral.")
+    p_contradiction: float = Field(..., ge=0.0, le=1.0, description="Probability of contradiction.")
+    label: NLILabel = Field(..., description="Argmax predicted label.")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence of predicted label.")
+
+
+class DocumentNLIPoolResult(BaseModel):
+    """Result of sentence-level NLI scoring and max-pooling across one or more documents."""
+
+    claim: str = Field(..., description="The factual claim / hypothesis evaluated.")
+    num_documents: int = Field(default=1, ge=0, description="Number of candidate documents evaluated.")
+    num_sentences_evaluated: int = Field(default=0, ge=0, description="Total sentences evaluated.")
+    p_entailment_max: float = Field(..., ge=0.0, le=1.0, description="Max-pooled entailment probability.")
+    p_contradiction_max: float = Field(..., ge=0.0, le=1.0, description="Max-pooled contradiction probability.")
+    winning_label: NLILabel = Field(..., description="Final adjudicated label from max-pooling.")
+    winning_confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence of the winning label.")
+    best_entailment_sentence: SentencePrediction | None = Field(default=None, description="Sentence achieving max entailment score.")
+    best_contradiction_sentence: SentencePrediction | None = Field(default=None, description="Sentence achieving max contradiction score.")
+    winning_sentence: SentencePrediction | None = Field(default=None, description="Sentence that determined the winning label.")
+    sentence_predictions: list[SentencePrediction] = Field(default_factory=list, description="All sentence-level predictions.")
+

@@ -126,6 +126,11 @@ class IndependenceSetResult(BaseModel):
         le=1.0,
         description="Average pairwise lexical similarity across all canonical pairs.",
     )
+    kish_effective_sample_size: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Kish effective sample size (n_eff) discounting cluster redundancy.",
+    )
     disclaimer: str = Field(
         default=DISCLAIMER_PHRASE,
         description="Heuristic boundary notice.",

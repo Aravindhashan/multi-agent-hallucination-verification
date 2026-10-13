@@ -108,10 +108,10 @@ flowchart TD
 | **Phase 2** | **2.3** | Temporal Freshness & Decay Scorer | **COMPLETE** | 40/40 Unit Tests Passed |
 | **Phase 2** | **2.4** | Source Independence & Redundancy Detector | **COMPLETE** | 40/40 Unit Tests Passed |
 | **Phase 2** | **2.5** | Evidence Pollution & Circularity Defense | **COMPLETE** | 27/27 Unit Tests Passed |
-| **Integration**| **Wiring** | HybridRetriever Wiring into Defender & Prosecutor via `Depends()` | **COMPLETE** | Stance differentiation & router injection verified |
-| **Integration**| **Session** | In-Memory Thread-Safe Session Store | **COMPLETE** | 8/8 Unit Tests Passed |
-| **Benchmark**  | **Stress** | Domain-Diverse Decomposition Stress Benchmark (60 sentences) | **COMPLETE** | 100% High-Quality Claims (Atomicity: 1.0, Entailment: 0.998) |
-| **Phase 3** | **3.1 - 3.3** | Multi-Turn Adversarial Debate Orchestrator | *READY* | Modules 5 & 6 standalone ready; multi-turn debate next |
-| **Phase 4** | **4.1 - 4.2** | Calibrated Verdict & Aggregation Engine | *PENDING* | Blocked by Phase 3 |
-| **Phase 5** | **5.1 - 5.2** | FastAPI End-to-End Verification Pipeline & UI | *PENDING* | Blocked by Phase 4 |
-| **Phase 6** | **6.1 - 6.2** | Benchmark Evaluation & Ablation Suite | *PENDING* | Blocked by Phase 5 |
+| **Phase 3** | **3.1 - 3.3** | Federated Evidence Engine & Adversarial Multi-Turn Debate | **COMPLETE** | Multi-Turn Defender/Prosecutor Debate with live web escalation & SQLite cache (16/16 Unit Tests Passed) |
+| **Phase 4** | **4.1 - 4.2** | Evidence Quality Firewall & Cluster Representative Pooling | **COMPLETE** | Complete-linkage clustering, Kish $n_{\text{eff}}$, double-counting defense (16/16 Unit Tests Passed) |
+| **Phase 5** | **5.1 - 5.2** | DeBERTa NLI Cross-Encoder Adjudication Engine | **COMPLETE** | Claim-aware sentence windowing (`select_best_sentence_window`), tri-class verdict taxonomy (8/8 Batch Tests Passed) |
+| **Core Innovation**| **Metric** | Decoupled H-Index Formulation ($H_{\text{refuted}}$ vs $U_{\text{unverified}}$) | **COMPLETE** | Eliminates false hallucination alarms on unverified claims; dual metric tracking (4/4 Unit Tests Passed) |
+| **System**  | **Pipeline** | End-to-End Verification Pipeline & Interactive Web UI Dashboard | **COMPLETE** | Real-time dual-badge display, debate logs, provenance viewer, master batch validation (8/8 Master Tests Passed) |
+| **Phase 6** | **6.1 - 6.2** | Benchmark Evaluation & Ablation Suite | **IN PROGRESS** | SciFact/FEVER benchmarks and deduplication ablation suites operational |
+

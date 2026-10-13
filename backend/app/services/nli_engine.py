@@ -1,19 +1,37 @@
 """DeBERTa Cross-Encoder NLI Engine for factual claim verification."""
 
 import logging
+import threading
 import time
 from typing import Any
 
 import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+import os
+
+try:
+    num_threads = min(8, os.cpu_count() or 4)
+    torch.set_num_threads(num_threads)
+    torch.set_num_interop_threads(1)
+except Exception:
+    pass
 
 from app.services.nli_config import NLISettings
 from app.services.nli_models import (
+    DocumentNLIPoolResult,
     NLIConfigurationError,
     NLIInferenceError,
     NLIInputError,
     NLILabel,
     NLIModelLoadError,
     NLIResult,
+    SentencePrediction,
+)
+from app.services.sentence_window import (
+    SentenceWindow,
+    select_best_sentence_window,
+    split_into_sentences,
 )
 
 logger = logging.getLogger("hallucination_verifier.nli_engine")
@@ -39,6 +57,7 @@ class NLIEngine:
         self.model = model
         self.tokenizer = tokenizer
         self.is_loaded = False
+        self._lock = threading.RLock()
         self.label_mapping: dict[int, NLILabel] = {}
         self.entailment_idx: int = 0
         self.neutral_idx: int = 1
@@ -69,32 +88,32 @@ class NLIEngine:
 
     def _load_model(self) -> None:
         """Load cross-encoder tokenizer and model weights from Hugging Face Hub / local cache."""
-        if self.is_loaded and self.model is not None and self.tokenizer is not None:
-            return
+        with self._lock:
+            if self.is_loaded and self.model is not None and self.tokenizer is not None:
+                return
 
-        logger.info("Loading NLI model checkpoint: %s on device: %s", self.config.model_name, self.device)
-        try:
-            from transformers import AutoModelForSequenceClassification, AutoTokenizer
-
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.config.model_name,
-                cache_dir=self.config.cache_dir,
-                trust_remote_code=False,
-            )
-            self.model = AutoModelForSequenceClassification.from_pretrained(
-                self.config.model_name,
-                cache_dir=self.config.cache_dir,
-                trust_remote_code=False,
-            )
-            self.model.to(self.device)
-            self.model.eval()
-            self._resolve_label_mapping()
-            self.is_loaded = True
-            logger.info("NLI model successfully loaded and configured.")
-        except Exception as exc:
-            raise NLIModelLoadError(
-                f"Failed to load NLI model '{self.config.model_name}': {exc}"
-            ) from exc
+            logger.info("Loading NLI model checkpoint: %s on device: %s", self.config.model_name, self.device)
+            try:
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.config.model_name,
+                    cache_dir=self.config.cache_dir,
+                    trust_remote_code=False,
+                )
+                self.model = AutoModelForSequenceClassification.from_pretrained(
+                    self.config.model_name,
+                    cache_dir=self.config.cache_dir,
+                    trust_remote_code=False,
+                    low_cpu_mem_usage=False,
+                )
+                self.model.to(self.device)
+                self.model.eval()
+                self._resolve_label_mapping()
+                self.is_loaded = True
+                logger.info("NLI model successfully loaded and configured.")
+            except Exception as exc:
+                raise NLIModelLoadError(
+                    f"Failed to load NLI model '{self.config.model_name}': {exc}"
+                ) from exc
 
     def _resolve_label_mapping(self) -> None:
         """Inspect model configuration to resolve exact index-to-label mappings."""
@@ -146,13 +165,21 @@ class NLIEngine:
             raise NLIInputError("Evidence cannot be empty or whitespace-only.")
 
         if len(claim) > self.config.max_claim_chars:
-            raise NLIInputError(
-                f"Claim exceeds maximum allowed length of {self.config.max_claim_chars} characters (got {len(claim)})."
-            )
+            if self.config.truncation_policy == "truncate":
+                claim = claim[:self.config.max_claim_chars]
+                claim_trimmed = claim.strip()
+            else:
+                raise NLIInputError(
+                    f"Claim exceeds maximum allowed length of {self.config.max_claim_chars} characters (got {len(claim)})."
+                )
         if len(evidence) > self.config.max_evidence_chars:
-            raise NLIInputError(
-                f"Evidence exceeds maximum allowed length of {self.config.max_evidence_chars} characters (got {len(evidence)})."
-            )
+            if self.config.truncation_policy == "truncate":
+                evidence = evidence[:self.config.max_evidence_chars]
+                evidence_trimmed = evidence.strip()
+            else:
+                raise NLIInputError(
+                    f"Evidence exceeds maximum allowed length of {self.config.max_evidence_chars} characters (got {len(evidence)})."
+                )
 
         return claim_trimmed, evidence_trimmed
 
@@ -168,6 +195,138 @@ class NLIEngine:
         """
         results = self.predict_batch([(claim, evidence)])
         return results[0]
+
+    def predict_multi_document_sentences(
+        self,
+        claim: str,
+        documents: list[tuple[str, str]],
+        threshold: float = 0.5,
+    ) -> DocumentNLIPoolResult:
+        """Score every sentence of candidate documents against the claim and max-pool.
+
+        Standard SciFact evidence verification pipeline:
+        1. Splits each candidate abstract into discrete sentences using abbreviation-safe splitting.
+        2. Scores every (claim, sentence) pair directly with cross-encoder NLI (no heuristic windowing).
+        3. Max-pools entailment and contradiction scores across all sentences.
+        4. Selects winning label and assigns precise sentence attribution.
+
+        Args:
+            claim: Factual claim / hypothesis to verify.
+            documents: List of (doc_id, doc_text) tuples.
+            threshold: Probability threshold for adopting entailment or contradiction stance (default: 0.5).
+
+        Returns:
+            DocumentNLIPoolResult with max-pooled probabilities and winning sentence attribution.
+        """
+        if not claim or not str(claim).strip():
+            raise NLIInputError("Claim text cannot be empty.")
+
+        claim_clean = str(claim).strip()
+        all_sentence_entries: list[tuple[str, int, str]] = []  # (doc_id, sent_idx, sent_text)
+
+        for doc_id, doc_text in documents:
+            if not doc_text or not str(doc_text).strip():
+                continue
+            sents = split_into_sentences(doc_text)
+            for s_idx, s_text in enumerate(sents):
+                clean_s = s_text.strip()
+                if clean_s:
+                    all_sentence_entries.append((doc_id, s_idx, clean_s))
+
+        if not all_sentence_entries:
+            return DocumentNLIPoolResult(
+                claim=claim_clean,
+                num_documents=len(documents),
+                num_sentences_evaluated=0,
+                p_entailment_max=0.0,
+                p_contradiction_max=0.0,
+                winning_label=NLILabel.NEUTRAL,
+                winning_confidence=1.0,
+                sentence_predictions=[],
+            )
+
+        # Build raw sentence pairs. Note: bypass heuristic windowing by running
+        # directly on raw sentence text with enable_sentence_windows temporarily bypassed.
+        pairs = [(claim_clean, s_text) for _, _, s_text in all_sentence_entries]
+
+        original_window_setting = self.config.enable_sentence_windows
+        try:
+            self.config.enable_sentence_windows = False
+            raw_results = self.predict_batch(pairs)
+        finally:
+            self.config.enable_sentence_windows = original_window_setting
+
+        sentence_preds: list[SentencePrediction] = []
+        max_ent = -1.0
+        max_con = -1.0
+        best_ent_pred: SentencePrediction | None = None
+        best_con_pred: SentencePrediction | None = None
+
+        for (doc_id, s_idx, s_text), res in zip(all_sentence_entries, raw_results):
+            sp = SentencePrediction(
+                doc_id=doc_id,
+                sentence_idx=s_idx,
+                sentence_text=s_text,
+                p_entailment=res.p_entailment,
+                p_neutral=res.p_neutral,
+                p_contradiction=res.p_contradiction,
+                label=res.label,
+                confidence=res.confidence,
+            )
+            sentence_preds.append(sp)
+
+            if res.p_entailment > max_ent:
+                max_ent = res.p_entailment
+                best_ent_pred = sp
+
+            if res.p_contradiction > max_con:
+                max_con = res.p_contradiction
+                best_con_pred = sp
+
+        # Adjudication via max-pooling
+        max_ent_val = max(max_ent, 0.0)
+        max_con_val = max(max_con, 0.0)
+
+        if max_ent_val > max_con_val and max_ent_val >= threshold:
+            winning_label = NLILabel.ENTAILMENT
+            winning_confidence = max_ent_val
+            winning_sent = best_ent_pred
+        elif max_con_val > max_ent_val and max_con_val >= threshold:
+            winning_label = NLILabel.CONTRADICTION
+            winning_confidence = max_con_val
+            winning_sent = best_con_pred
+        else:
+            winning_label = NLILabel.NEUTRAL
+            winning_confidence = max(1.0 - max(max_ent_val, max_con_val), threshold)
+            winning_sent = None
+
+        return DocumentNLIPoolResult(
+            claim=claim_clean,
+            num_documents=len(documents),
+            num_sentences_evaluated=len(sentence_preds),
+            p_entailment_max=max_ent_val,
+            p_contradiction_max=max_con_val,
+            winning_label=winning_label,
+            winning_confidence=winning_confidence,
+            best_entailment_sentence=best_ent_pred,
+            best_contradiction_sentence=best_con_pred,
+            winning_sentence=winning_sent,
+            sentence_predictions=sentence_preds,
+        )
+
+    def predict_document_sentences(
+        self,
+        claim: str,
+        document_text: str,
+        document_id: str | None = None,
+        threshold: float = 0.5,
+    ) -> DocumentNLIPoolResult:
+        """Score every sentence of a single abstract against the claim and max-pool."""
+        return self.predict_multi_document_sentences(
+            claim=claim,
+            documents=[(document_id or "doc_0", document_text)],
+            threshold=threshold,
+        )
 
     def predict_batch(self, pairs: list[tuple[str, str]]) -> list[NLIResult]:
         """Run batch cross-encoder NLI inference on a list of (claim, evidence) pairs.
@@ -195,18 +354,44 @@ class NLIEngine:
             batch_slice = validated_pairs[batch_start : batch_start + self.config.batch_size]
 
             # In standard NLI cross-encoders: Premise = Evidence, Hypothesis = Claim
-            premises = [e for c, e in batch_slice]
             hypotheses = [c for c, e in batch_slice]
+            raw_evidence_list = [e for c, e in batch_slice]
 
-            # 4. Tokenization and truncation policy enforcement
+            # If sentence windowing is enabled, extract the best 1-3 sentences:
+            premises = []
+            extracted_windows: list[SentenceWindow | None] = []
+            for c, e in batch_slice:
+                if self.config.enable_sentence_windows:
+                    window = select_best_sentence_window(
+                        claim=c,
+                        evidence_passage=e,
+                        min_sentences=self.config.min_window_sentences,
+                        max_sentences=self.config.max_window_sentences,
+                        strategy=self.config.sentence_window_strategy,
+                    )
+                    premises.append(window.text)
+                    extracted_windows.append(window)
+                else:
+                    premises.append(e)
+                    extracted_windows.append(None)
+
+            # Raw un-truncated encodings of original input pairs for diagnostic tracking
+            raw_full_encodings = self.tokenizer(
+                raw_evidence_list,
+                hypotheses,
+                padding=False,
+                truncation=False,
+            )
+
+            # 4. Tokenization and truncation policy enforcement on model inputs
             if self.config.truncation_policy == "strict":
-                raw_encodings = self.tokenizer(
+                raw_window_encodings = self.tokenizer(
                     premises,
                     hypotheses,
                     padding=False,
                     truncation=False,
                 )
-                for ids in raw_encodings["input_ids"]:
+                for ids in raw_window_encodings["input_ids"]:
                     if len(ids) > self.config.max_length:
                         raise NLIInputError(
                             f"Input sequence length ({len(ids)} tokens) exceeds max_length "
@@ -221,13 +406,13 @@ class NLIEngine:
                 )
                 truncated_flags = [False] * len(batch_slice)
             else:  # "truncate"
-                raw_encodings = self.tokenizer(
+                raw_window_encodings = self.tokenizer(
                     premises,
                     hypotheses,
                     padding=False,
                     truncation=False,
                 )
-                truncated_flags = [len(ids) > self.config.max_length for ids in raw_encodings["input_ids"]]
+                truncated_flags = [len(ids) > self.config.max_length for ids in raw_window_encodings["input_ids"]]
                 tokens = self.tokenizer(
                     premises,
                     hypotheses,
@@ -243,7 +428,7 @@ class NLIEngine:
             # 5. Forward pass with error handling
             t0 = time.perf_counter()
             try:
-                with torch.no_grad():
+                with torch.inference_mode():
                     outputs = self.model(**tokens)
                     logits = outputs.logits
             except Exception as exc:
@@ -252,11 +437,16 @@ class NLIEngine:
             if torch.isnan(logits).any() or torch.isinf(logits).any():
                 raise NLIInferenceError("NLI model produced NaN or Inf logits during inference.")
 
-            elapsed_ms = (time.perf_counter() - t0) * 1000.0 / len(batch_slice)
+            batch_sec = time.perf_counter() - t0
+            elapsed_ms = batch_sec * 1000.0 / len(batch_slice)
 
             # 6. Compute calibrated softmax probabilities
             probs_tensor = torch.nn.functional.softmax(logits.float(), dim=-1)
             probs_matrix = probs_tensor.cpu().tolist()
+
+            total_batches = (len(validated_pairs) + self.config.batch_size - 1) // self.config.batch_size
+            curr_batch = (batch_start // self.config.batch_size) + 1
+            logger.info("NLI Batch [%d/%d] processed %d pairs in %.2fs (%.2f ms/pair)", curr_batch, total_batches, len(batch_slice), batch_sec, elapsed_ms)
 
             # 7. Build NLIResult objects with contract validation
             for i, (claim_text, evidence_text) in enumerate(batch_slice):
@@ -274,17 +464,59 @@ class NLIEngine:
                 best_label = NLILabel(max_label_str)
                 best_conf = scores[max_label_str]
 
+                # Compute token lengths
+                raw_full_ids = raw_full_encodings["input_ids"][i]
+                raw_token_len = len(raw_full_ids)
+                if "attention_mask" in tokens and hasattr(tokens["attention_mask"], "shape"):
+                    actual_token_len = int(tokens["attention_mask"][i].sum().item())
+                else:
+                    actual_token_len = min(len(raw_window_encodings["input_ids"][i]), self.config.max_length)
+                is_truncated = bool(truncated_flags[i])
+
+                premise_text = premises[i]
+                win_obj = extracted_windows[i]
+                selected_indices = win_obj.sentence_indices if win_obj else None
+                window_score = win_obj.score if win_obj else None
+
+                # Log raw input and model outputs
+                logger.info(
+                    "DeBERTa NLI Raw Input & Prediction:\n"
+                    "  [Claim (Hypothesis)]: %s\n"
+                    "  [Premise (Evidence)]: %s\n"
+                    "  [Sentence Window]: sents=%s, score=%s\n"
+                    "  [Token Length]: %d (raw: %d, truncated: %s, max_cap: %d)\n"
+                    "  [Probabilities]: Entailment=%.4f, Neutral=%.4f, Contradiction=%.4f -> Predicted: %s (conf: %.4f)",
+                    claim_text,
+                    premise_text,
+                    selected_indices,
+                    f"{window_score:.4f}" if window_score is not None else "N/A",
+                    actual_token_len,
+                    raw_token_len,
+                    is_truncated,
+                    self.config.max_length,
+                    p_e,
+                    p_n,
+                    p_c,
+                    best_label.value,
+                    best_conf,
+                )
+
                 try:
                     result = NLIResult(
                         claim=claim_text,
                         evidence=evidence_text,
+                        premise_text=premise_text,
+                        token_length=actual_token_len,
+                        raw_token_length=raw_token_len,
+                        selected_sentence_indices=selected_indices,
+                        sentence_window_score=window_score,
                         label=best_label,
                         confidence=best_conf,
                         p_entailment=p_e,
                         p_neutral=p_n,
                         p_contradiction=p_c,
                         scores=scores,
-                        truncated=truncated_flags[i],
+                        truncated=is_truncated,
                         model_name=self.config.model_name,
                         device=str(self.device),
                         inference_time_ms=round(elapsed_ms, 2),

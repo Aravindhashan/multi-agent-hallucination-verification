@@ -44,6 +44,18 @@ class TemporalFreshnessResult(BaseModel):
         default=False,
         description="Flag indicating that publication date was after the reference date.",
     )
+    temporal_anchor: str | None = Field(
+        default=None,
+        description="Temporal anchor string if supplied.",
+    )
+    is_historical_anchor: bool = Field(
+        default=False,
+        description="Flag indicating if temporal anchor represents a historical event.",
+    )
+    historical_half_life_days: float | None = Field(
+        default=None,
+        description="Retrospective half-life in days used for historical decay.",
+    )
     model_version: str = Field(
         default="temporal_freshness_v1",
         description="Model version tag.",

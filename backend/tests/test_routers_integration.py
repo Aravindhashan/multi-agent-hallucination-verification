@@ -279,6 +279,46 @@ def test_full_pipeline_end_to_end_chain(client):
     assert quality["admissible_count"] == 1
     assert quality["polluted_count"] == 0
 
+    # Step 6: Defender Supporting Evidence Gathering
+    res6 = client.post("/api/v1/defend-claim", json={
+        "claim_id": primary_claim["claim_id"],
+        "claim_text": primary_claim["text"],
+        "query_id": query_id,
+    })
+    assert res6.status_code == 200
+    defender_data = res6.json()
+    assert defender_data["claim_id"] == primary_claim["claim_id"]
+    assert "query_used" in defender_data
+    assert "supporting_evidence" in defender_data
+
+    # Step 7: Prosecutor Contradicting Evidence Gathering
+    res7 = client.post("/api/v1/prosecute-claim", json={
+        "claim_id": primary_claim["claim_id"],
+        "claim_text": primary_claim["text"],
+        "query_id": query_id,
+    })
+    assert res7.status_code == 200
+    prosecutor_data = res7.json()
+    assert prosecutor_data["claim_id"] == primary_claim["claim_id"]
+    assert "query_used" in prosecutor_data
+    assert "contradicting_evidence" in prosecutor_data
+
+    # Step 8: Multi-Turn Evidentiary Debate Orchestration (Module 7)
+    res8 = client.post("/api/v1/debate-claim", json={
+        "claim_id": primary_claim["claim_id"],
+        "claim_text": primary_claim["text"],
+        "query_id": query_id,
+    })
+    assert res8.status_code == 200
+    debate_data = res8.json()
+    assert debate_data["claim_id"] == primary_claim["claim_id"]
+    assert debate_data["total_rounds"] == 2
+    assert "final_supporting_evidence" in debate_data
+    assert "final_contradicting_evidence" in debate_data
+    assert len(debate_data["rounds"]) == 2
+    assert "jaccard_complementarity" in debate_data
+    assert "incremental_evidence_lift_percent" in debate_data
+
     # Verify comprehensive final session in SQLite
     store = get_session_store()
     final_session = store.get_session(UUID(query_id))
@@ -287,6 +327,20 @@ def test_full_pipeline_end_to_end_chain(client):
     assert len(final_session.claims) == len(claims)
     assert final_session.complexity_score == analysis["complexity_score"]
     assert "evidence_quality_evaluation" in final_session.metadata
+
+    # Verify claim record in SQLite contains BOTH defender and prosecutor evidence and queries
+    claim_rec = store.get_claim_record(UUID(query_id), primary_claim["claim_id"])
+    assert claim_rec is not None
+    assert "supporting_evidence" in claim_rec
+    assert "contradicting_evidence" in claim_rec
+    assert claim_rec.get("defender_query_used") is not None
+    assert claim_rec.get("prosecutor_query_used") is not None
+    assert claim_rec.get("defender_round_1_query") is not None
+    assert claim_rec.get("prosecutor_round_1_query") is not None
+    assert len(claim_rec.get("debate_rounds", [])) == 2
+    assert claim_rec.get("debate", {}).get("total_rounds") == 2
+    assert claim_rec.get("metadata", {}).get("debate") is not None
+
 
 
 def test_input_validation_errors(client):
@@ -309,4 +363,12 @@ def test_input_validation_errors(client):
 
     # 5. Empty evidence list in quality evaluation
     res = client.post("/api/v1/evidence/evaluate-quality", json={"claim_text": "Valid claim", "evidence_items": []})
+    assert res.status_code == 422
+
+    # 6. Empty claim text in defend-claim
+    res = client.post("/api/v1/defend-claim", json={"claim_text": "   "})
+    assert res.status_code == 422
+
+    # 7. Empty claim text in debate-claim
+    res = client.post("/api/v1/debate-claim", json={"claim_text": "   "})
     assert res.status_code == 422

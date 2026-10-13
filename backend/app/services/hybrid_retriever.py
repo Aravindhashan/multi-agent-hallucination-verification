@@ -169,7 +169,11 @@ class HybridRetriever(BaseEvidenceRetriever):
         """
         query_text = claim_text.strip()
         if str(stance).lower() == "contradicting":
-            query_text = f"{query_text} controversy criticism contradiction disputed false refuted"
+            contradiction_tokens = {"controversy", "criticism", "contradiction", "disputed", "false", "refuted", "dispute", "debunked", "myth"}
+            existing_tokens = set(query_text.lower().split())
+            if not existing_tokens.intersection(contradiction_tokens):
+                query_text = f"{query_text} controversy criticism contradiction disputed false refuted"
+
 
         candidates = self.retrieve_hybrid(query=query_text, top_k=settings.DEFAULT_TOP_K)
         evidence_items: list[EvidenceItem] = []

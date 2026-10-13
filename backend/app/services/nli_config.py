@@ -12,12 +12,16 @@ class NLISettings:
 
     model_name: str = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
     device: str = "auto"
-    max_length: int = 512
+    max_length: int = 256
     batch_size: int = 8
-    max_claim_chars: int = 2000
-    max_evidence_chars: int = 8000
-    truncation_policy: str = "strict"  # "strict" or "truncate"
+    max_claim_chars: int = 500
+    max_evidence_chars: int = 1000
+    truncation_policy: str = "truncate"  # "strict" or "truncate"
     cache_dir: str | None = None
+    enable_sentence_windows: bool = True
+    min_window_sentences: int = 1
+    max_window_sentences: int = 3
+    sentence_window_strategy: str = "hybrid"  # "hybrid", "contiguous", or "top_k"
 
     def __post_init__(self) -> None:
         self.validate()
@@ -54,6 +58,28 @@ class NLISettings:
             )
         self.truncation_policy = trunc
 
+        if not isinstance(self.enable_sentence_windows, bool):
+            raise NLIConfigurationError(
+                f"enable_sentence_windows must be a boolean, got {type(self.enable_sentence_windows)}."
+            )
+
+        if not isinstance(self.min_window_sentences, int) or self.min_window_sentences <= 0:
+            raise NLIConfigurationError(
+                f"min_window_sentences must be a positive integer, got {self.min_window_sentences}."
+            )
+
+        if not isinstance(self.max_window_sentences, int) or self.max_window_sentences < self.min_window_sentences:
+            raise NLIConfigurationError(
+                f"max_window_sentences must be >= min_window_sentences, got {self.max_window_sentences}."
+            )
+
+        strat = str(self.sentence_window_strategy).strip().lower()
+        if strat not in {"hybrid", "contiguous", "top_k"}:
+            raise NLIConfigurationError(
+                f"Invalid sentence_window_strategy: '{self.sentence_window_strategy}'. Must be 'hybrid', 'contiguous', or 'top_k'."
+            )
+        self.sentence_window_strategy = strat
+
     @classmethod
     def from_settings(cls, base_settings: Any = None) -> "NLISettings":
         """Build NLISettings from application Settings object or environment defaults."""
@@ -70,4 +96,8 @@ class NLISettings:
             max_evidence_chars=getattr(base_settings, "NLI_MAX_EVIDENCE_CHARS", 8000),
             truncation_policy=getattr(base_settings, "NLI_TRUNCATION_POLICY", "strict"),
             cache_dir=getattr(base_settings, "NLI_CACHE_DIR", None),
+            enable_sentence_windows=getattr(base_settings, "NLI_ENABLE_SENTENCE_WINDOWS", True),
+            min_window_sentences=getattr(base_settings, "NLI_MIN_WINDOW_SENTENCES", 1),
+            max_window_sentences=getattr(base_settings, "NLI_MAX_WINDOW_SENTENCES", 3),
+            sentence_window_strategy=getattr(base_settings, "NLI_SENTENCE_WINDOW_STRATEGY", "hybrid"),
         )

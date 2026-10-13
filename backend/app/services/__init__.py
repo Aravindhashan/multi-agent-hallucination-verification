@@ -9,6 +9,16 @@ from app.services.claim_extraction_service import (
 )
 from app.services.llm_claim_extractor import LLMClaimExtractor
 from app.services.nlp_claim_extractor import NLPClaimExtractor
+from app.services.adjudication_service import (
+    AdjudicationService,
+    get_adjudication_service,
+    reset_adjudication_service,
+)
+from app.services.verification_service import (
+    VerificationService,
+    get_verification_service,
+    reset_verification_service,
+)
 from app.services.nli_config import NLISettings
 from app.services.nli_engine import NLIEngine, get_nli_engine, reset_nli_engine
 from app.services.nli_models import (
@@ -19,6 +29,12 @@ from app.services.nli_models import (
     NLILabel,
     NLIModelLoadError,
     NLIResult,
+)
+from app.services.sentence_window import (
+    SentenceWindow,
+    score_sentence,
+    select_best_sentence_window,
+    split_into_sentences,
 )
 from app.services.simple_claim_extractor import SimpleClaimExtractor
 from app.services.source_credibility_config import (
@@ -209,4 +225,14 @@ __all__ = [
     "extract_meaningful_tokens",
     "compute_directional_overlap",
     "compute_grounding_score",
+    "AdjudicationService",
+    "get_adjudication_service",
+    "reset_adjudication_service",
+    "VerificationService",
+    "get_verification_service",
+    "reset_verification_service",
+    "SentenceWindow",
+    "score_sentence",
+    "select_best_sentence_window",
+    "split_into_sentences",
 ]

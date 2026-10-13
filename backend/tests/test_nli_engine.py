@@ -114,11 +114,11 @@ def test_nli_config_defaults():
     config = NLISettings()
     assert config.model_name == "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
     assert config.device in {"auto", "cpu", "cuda", "mps"}
-    assert config.max_length == 512
+    assert config.max_length == 256
     assert config.batch_size == 8
-    assert config.max_claim_chars == 2000
-    assert config.max_evidence_chars == 8000
-    assert config.truncation_policy == "strict"
+    assert config.max_claim_chars == 500
+    assert config.max_evidence_chars == 1000
+    assert config.truncation_policy == "truncate"
 
 
 def test_nli_config_invalid_parameters():
@@ -150,7 +150,7 @@ def test_nli_config_invalid_parameters():
 
 def test_nli_engine_rejects_invalid_inputs():
     mock_engine = NLIEngine(
-        config=NLISettings(max_claim_chars=50, max_evidence_chars=100),
+        config=NLISettings(max_claim_chars=50, max_evidence_chars=100, truncation_policy="strict"),
         model=MockModel(),
         tokenizer=MockTokenizer(),
     )

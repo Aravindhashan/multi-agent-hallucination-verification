@@ -19,22 +19,34 @@ def get_logger() -> logging.Logger:
 def get_evidence_retriever():
     """FastAPI dependency providing the active evidence retriever.
 
-    Defaults to HybridRetriever unless RETRIEVER_TYPE is explicitly 'mock'
-    or when overridden via app.dependency_overrides in test fixtures.
+    Resolution semantics:
+    - If RETRIEVER_TYPE is explicitly 'mock', returns MockEvidenceRetriever (for offline mock testing).
+    - If RETRIEVER_TYPE is 'hybrid' (standard configuration):
+      Attempts to initialize and return the singleton HybridRetriever.
+      If HybridRetriever initialization fails, an explicit RuntimeError is raised
+      (never silently substituting synthetic mock evidence for real corpus documents,
+      which would compromise hallucination detection integrity).
     """
     from app.config import settings
 
-    if getattr(settings, "RETRIEVER_TYPE", "hybrid").lower() == "mock":
+    retriever_type = getattr(settings, "RETRIEVER_TYPE", "hybrid").lower()
+
+    if retriever_type == "mock":
         from app.services.mock_evidence_retriever import MockEvidenceRetriever
         return MockEvidenceRetriever()
+
+    if retriever_type in ("federated", "live_web", "web", "scifact", "fever"):
+        from app.services.federated_evidence_retriever import get_federated_evidence_retriever
+        return get_federated_evidence_retriever()
 
     try:
         from app.services.hybrid_retriever import get_hybrid_retriever
         return get_hybrid_retriever()
-    except Exception:
-        # Fallback gracefully to mock if corpus/indexes are uninitialized in minimal environments
-        from app.services.mock_evidence_retriever import MockEvidenceRetriever
-        return MockEvidenceRetriever()
+    except Exception as exc:
+        logger = logging.getLogger(LOGGER_NAME)
+        logger.error("HybridRetriever failed to initialize: %s", exc)
+        raise RuntimeError(f"HybridRetriever backend unavailable: {exc}") from exc
+
 
 
 def get_session_store_dep():

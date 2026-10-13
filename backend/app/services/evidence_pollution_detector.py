@@ -13,12 +13,18 @@ from collections.abc import Sequence
 from typing import Any
 
 from app.services.evidence_pollution_config import (
+    DEFAULT_BOILERPLATE_PATTERNS,
     DEFAULT_MINIMUM_MEANINGFUL_TOKENS,
     DEFAULT_MINIMUM_TOKEN_LENGTH,
     DEFAULT_STOPWORDS,
     DEFAULT_UNGROUNDED_THRESHOLD,
     DEFAULT_WEAK_GROUNDING_THRESHOLD,
     DISCLAIMER_PHRASE,
+    POLLUTION_BOILERPLATE_THRESHOLD,
+    POLLUTION_CIRCULARITY_THRESHOLD,
+    POLLUTION_CLEAN_RETENTION_TARGET,
+    POLLUTION_CLEAN_THRESHOLD,
+    POLLUTION_LOW_GROUNDING_THRESHOLD,
     EvidencePollutionConfigError,
     EvidencePollutionInputError,
     EvidencePollutionSettings,
@@ -36,6 +42,47 @@ from app.services.source_independence_scorer import (
 )
 
 logger = logging.getLogger("hallucination_verifier.evidence_pollution")
+
+
+def detect_boilerplate(
+    text: str,
+    patterns: Sequence[re.Pattern[str]] | None = None,
+) -> tuple[bool, list[str]]:
+    """Detect common web scraper navigation headers, footers, cookie banners, or subscription templates.
+
+    Returns:
+        tuple of (is_boilerplate: bool, matched_phrases: list[str])
+    """
+    if not text:
+        return False, []
+    pats = patterns if patterns is not None else DEFAULT_BOILERPLATE_PATTERNS
+    matched: list[str] = []
+    for pat in pats:
+        m = pat.search(text)
+        if m:
+            matched.append(m.group(0).strip())
+    return (len(matched) > 0, matched)
+
+
+def classify_pollution_gate(
+    pollution_score: float,
+    settings: EvidencePollutionSettings | None = None,
+) -> str:
+    """Classify pollution score into the 4-layer hierarchy (§8.4).
+
+    Returns:
+        One of: 'CIRCULARITY', 'LOW_GROUNDING', 'BOILERPLATE', 'WEAK_SIGNAL', 'CLEAN'.
+    """
+    cfg = settings or EvidencePollutionSettings()
+    if pollution_score >= cfg.circularity_threshold:
+        return "CIRCULARITY"
+    if pollution_score >= cfg.low_grounding_threshold:
+        return "LOW_GROUNDING"
+    if pollution_score >= cfg.boilerplate_threshold:
+        return "BOILERPLATE"
+    if pollution_score >= cfg.clean_threshold:
+        return "WEAK_SIGNAL"
+    return "CLEAN"
 
 
 def extract_meaningful_tokens(
@@ -199,10 +246,13 @@ class EvidencePollutionDetector:
             len(meaningful_claim) >= min_tokens and len(meaningful_ev) >= min_tokens
         )
 
-        # 6. Precedence Decision Hierarchy (§8.1, §9)
-        # Precedence: SELF_REFERENTIAL -> EXACT_DUPLICATE -> UNGROUNDED -> WEAK_POLLUTION_SIGNAL -> CLEAN
+        # 6. Boilerplate detection (§8.4)
+        has_bp, bp_matches = detect_boilerplate(raw_text, self.settings.boilerplate_patterns)
 
-        # Layer 1: Self-Referential Generated Content
+        # 7. Precedence Decision Hierarchy (§8.1, §8.4, §9)
+        # Precedence: SELF_REFERENTIAL -> EXACT_DUPLICATE -> UNGROUNDED -> BOILERPLATE -> WEAK_POLLUTION_SIGNAL -> CLEAN
+
+        # Layer 1: Self-Referential Generated Content (P >= 0.90)
         if is_claim_origin_match or (is_exact_claim_text and has_meaningful_tokens):
             classification = PollutionClass.SELF_REFERENTIAL
             pollution_score = 1.0
@@ -221,7 +271,7 @@ class EvidencePollutionDetector:
                 f"{DISCLAIMER_PHRASE}"
             )
 
-        # Layer 2: Exact Duplicate / Repeated Evidence
+        # Layer 2: Exact Duplicate / Repeated Evidence (P >= 0.90)
         elif is_repeated_url or is_repeated_text or is_repeated_doc_id:
             classification = PollutionClass.EXACT_DUPLICATE
             pollution_score = 1.0
@@ -242,25 +292,38 @@ class EvidencePollutionDetector:
                 f"{DISCLAIMER_PHRASE}"
             )
 
-        # Layer 3: Ungrounded Evidence
+        # Layer 3: Boilerplate / Scraped Template Header or Footer (P >= 0.60)
+        elif has_bp and (grounding < 0.50 or len(bp_matches) >= 2):
+            classification = PollutionClass.BOILERPLATE
+            pollution_score = self.settings.boilerplate_threshold
+            is_exact = False
+            is_self = False
+            bp_str = ", ".join(f"'{m}'" for m in bp_matches[:3])
+            explanation = (
+                f"Evidence '{doc_id}' contains web navigation template / scraper boilerplate "
+                f"({bp_str}) (grounding={grounding:.4f}); classified as BOILERPLATE "
+                f"with pollution_score={self.settings.boilerplate_threshold:.4f}. {DISCLAIMER_PHRASE}"
+            )
+
+        # Layer 4: Ungrounded Evidence (P >= 0.80)
         elif (
             grounding < self.settings.ungrounded_threshold
             and len(meaningful_claim) >= min_tokens
             and len(meaningful_ev) >= min_tokens
         ):
             classification = PollutionClass.UNGROUNDED
-            pollution_score = 0.80
+            pollution_score = self.settings.low_grounding_threshold
             is_exact = False
             is_self = False
             explanation = (
                 f"Evidence '{doc_id}' exhibits low lexical grounding relative to the claim "
                 f"(grounding={grounding:.4f} < ungrounded_threshold={self.settings.ungrounded_threshold:.2f}); "
-                f"classified as UNGROUNDED with pollution_score=0.8000. "
+                f"classified as UNGROUNDED with pollution_score={self.settings.low_grounding_threshold:.4f}. "
                 f"Note: Lexical grounding is a lexical filter and not semantic entailment. "
                 f"{DISCLAIMER_PHRASE}"
             )
 
-        # Layer 4: Weak Pollution / Suspicious Signal / Short-Text Boundary (§10)
+        # Layer 5: Weak Pollution / Suspicious Signal / Short-Text Boundary (§10)
         elif (
             not has_meaningful_tokens
             or grounding < self.settings.weak_grounding_threshold
@@ -284,7 +347,7 @@ class EvidencePollutionDetector:
                     f"classified as WEAK_POLLUTION_SIGNAL with pollution_score=0.3000. {DISCLAIMER_PHRASE}"
                 )
 
-        # Layer 5: Clean Evidence
+        # Layer 6: Clean Evidence (P < 0.20)
         else:
             classification = PollutionClass.CLEAN
             pollution_score = 0.0
@@ -292,7 +355,7 @@ class EvidencePollutionDetector:
             is_self = False
             explanation = (
                 f"Evidence '{doc_id}' is well-grounded (grounding={grounding:.4f}) and exhibits no "
-                f"detectable self-reference or duplicate contamination; classified as CLEAN "
+                f"detectable self-reference, duplicate, or boilerplate contamination; classified as CLEAN "
                 f"with pollution_score=0.0000. {DISCLAIMER_PHRASE}"
             )
 
@@ -307,6 +370,7 @@ class EvidencePollutionDetector:
             grounding_score=grounding,
             is_exact_duplicate=is_exact,
             is_self_referential=is_self,
+            is_boilerplate=has_bp,
             is_circular=False,  # Strictly False per Anti-Fabrication Contract §5
             circularity_supported=False,  # Strictly False per Anti-Fabrication Contract §5
             explanation=explanation,
@@ -317,15 +381,25 @@ class EvidencePollutionDetector:
         claim: str,
         evidence_items: Sequence[Any],
         claim_origin_url: str | None = None,
+        batch_size: int = 10,
     ) -> BatchPollutionResult:
-        """Evaluate a set of retrieved evidence items against a claim (§15).
+        """Evaluate a set of retrieved evidence items against a claim (§15, §8.4).
 
         Tracks seen URLs, normalized texts, and document IDs across the set to detect
-        in-batch duplicates and circular repetition.
+        in-batch duplicates and circular repetition. Executes in memory-safe chunks
+        bounded by batch_size (default: 10).
         """
         if not isinstance(evidence_items, Sequence):
             raise EvidencePollutionInputError(
                 f"Expected Sequence for evidence_items, got {type(evidence_items).__name__}"
+            )
+        if not isinstance(batch_size, int) or isinstance(batch_size, bool):
+            raise EvidencePollutionInputError(
+                f"batch_size must be an integer, got {type(batch_size).__name__}"
+            )
+        if batch_size < 1:
+            raise EvidencePollutionInputError(
+                f"batch_size must be >= 1, got {batch_size}"
             )
 
         seen_urls: set[str] = set()
@@ -335,45 +409,53 @@ class EvidencePollutionDetector:
         evaluations: list[EvidencePollutionResult] = []
         polluted_ids: list[str] = []
         ungrounded_ids: list[str] = []
+        boilerplate_ids: list[str] = []
         clean_ids: list[str] = []
 
-        for item in evidence_items:
-            res = self.evaluate(
-                claim=claim,
-                evidence=item,
-                claim_origin_url=claim_origin_url,
-                seen_urls=seen_urls,
-                seen_texts=seen_texts,
-                seen_doc_ids=seen_doc_ids,
-            )
-            evaluations.append(res)
+        # Process in memory-safe chunks
+        for i in range(0, len(evidence_items), batch_size):
+            chunk = evidence_items[i : i + batch_size]
+            for item in chunk:
+                res = self.evaluate(
+                    claim=claim,
+                    evidence=item,
+                    claim_origin_url=claim_origin_url,
+                    seen_urls=seen_urls,
+                    seen_texts=seen_texts,
+                    seen_doc_ids=seen_doc_ids,
+                )
+                evaluations.append(res)
 
-            # Record seen metadata for subsequent items in the batch
-            doc_id, raw_text, _, source_url, _ = self._extract_document_fields(item)
-            seen_doc_ids.add(doc_id)
-            if raw_text:
-                seen_texts.add(normalize_text(raw_text).lower())
-            norm_u = normalize_url(source_url)
-            if norm_u:
-                seen_urls.add(norm_u)
+                # Record seen metadata for subsequent items in the batch
+                doc_id, raw_text, _, source_url, _ = self._extract_document_fields(item)
+                seen_doc_ids.add(doc_id)
+                if raw_text:
+                    seen_texts.add(normalize_text(raw_text).lower())
+                norm_u = normalize_url(source_url)
+                if norm_u:
+                    seen_urls.add(norm_u)
 
-            # Categorize
-            if res.classification in (
-                PollutionClass.SELF_REFERENTIAL,
-                PollutionClass.EXACT_DUPLICATE,
-                PollutionClass.UNGROUNDED,
-            ):
-                polluted_ids.append(res.document_id)
-            if res.classification == PollutionClass.UNGROUNDED:
-                ungrounded_ids.append(res.document_id)
-            elif res.classification == PollutionClass.CLEAN:
-                clean_ids.append(res.document_id)
+                # Categorize
+                if res.classification in (
+                    PollutionClass.SELF_REFERENTIAL,
+                    PollutionClass.EXACT_DUPLICATE,
+                    PollutionClass.UNGROUNDED,
+                    PollutionClass.BOILERPLATE,
+                ):
+                    polluted_ids.append(res.document_id)
+                if res.classification == PollutionClass.UNGROUNDED:
+                    ungrounded_ids.append(res.document_id)
+                elif res.classification == PollutionClass.BOILERPLATE:
+                    boilerplate_ids.append(res.document_id)
+                elif res.classification == PollutionClass.CLEAN:
+                    clean_ids.append(res.document_id)
 
         return BatchPollutionResult(
             total_items=len(evaluations),
             evaluations=evaluations,
             polluted_document_ids=polluted_ids,
             ungrounded_document_ids=ungrounded_ids,
+            boilerplate_document_ids=boilerplate_ids,
             clean_document_ids=clean_ids,
         )
 

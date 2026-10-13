@@ -23,6 +23,7 @@ class PollutionClass(str, Enum):
     SELF_REFERENTIAL = "SELF_REFERENTIAL"
     EXACT_DUPLICATE = "EXACT_DUPLICATE"
     UNGROUNDED = "UNGROUNDED"
+    BOILERPLATE = "BOILERPLATE"
     WEAK_POLLUTION_SIGNAL = "WEAK_POLLUTION_SIGNAL"
     CLEAN = "CLEAN"
 
@@ -88,6 +89,10 @@ class EvidencePollutionResult(BaseModel):
     is_self_referential: bool = Field(
         description="Flag indicating evidence repeats claim or matches claim origin."
     )
+    is_boilerplate: bool = Field(
+        default=False,
+        description="Flag indicating evidence text is dominated by web boilerplate or navigation templates.",
+    )
     is_circular: bool = Field(
         default=False,
         description="Circularity flag (False in current schema per Anti-Fabrication Contract).",
@@ -127,10 +132,14 @@ class BatchPollutionResult(BaseModel):
         description="Ordered list of individual evidence evaluations."
     )
     polluted_document_ids: list[str] = Field(
-        description="Document IDs classified as SELF_REFERENTIAL, EXACT_DUPLICATE, or UNGROUNDED."
+        description="Document IDs classified as SELF_REFERENTIAL, EXACT_DUPLICATE, UNGROUNDED, or BOILERPLATE."
     )
     ungrounded_document_ids: list[str] = Field(
         description="Document IDs specifically classified as UNGROUNDED."
+    )
+    boilerplate_document_ids: list[str] = Field(
+        default_factory=list,
+        description="Document IDs specifically classified as BOILERPLATE.",
     )
     clean_document_ids: list[str] = Field(
         description="Document IDs classified as CLEAN."

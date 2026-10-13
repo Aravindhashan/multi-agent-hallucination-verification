@@ -71,8 +71,26 @@ class CorpusLoader:
         return cls.from_dict(raw_data)
 
     @classmethod
+    def from_jsonl(cls, jsonl_str: str, version: str = "1.0.0") -> "CorpusLoader":
+        """Parse and validate a corpus from a JSON Lines (JSONL) string."""
+        if not isinstance(jsonl_str, str) or not jsonl_str.strip():
+            raise CorpusValidationError("JSONL string must be non-empty.")
+        docs: list[CorpusDocument] = []
+        for line_num, line in enumerate(jsonl_str.strip().split("\n"), start=1):
+            line_str = line.strip()
+            if not line_str:
+                continue
+            try:
+                doc_data = json.loads(line_str)
+                docs.append(CorpusDocument.model_validate(doc_data))
+            except Exception as e:
+                raise CorpusLoadError(f"Failed to parse JSONL line {line_num}: {e}") from e
+        corpus = Corpus(version=version, documents=docs)
+        return cls(corpus)
+
+    @classmethod
     def from_file(cls, file_path: Path | str) -> "CorpusLoader":
-        """Load and validate a corpus from a local JSON file path."""
+        """Load and validate a corpus from a local JSON or JSONL file path."""
         path = Path(file_path)
         if not path.exists():
             raise CorpusLoadError(f"Corpus file not found at: {path.resolve()}")
@@ -82,4 +100,9 @@ class CorpusLoader:
             raw_text = path.read_text(encoding="utf-8")
         except Exception as e:
             raise CorpusLoadError(f"Failed to read corpus file {path.resolve()}: {e}") from e
+
+        if path.suffix.lower() == ".jsonl":
+            return cls.from_jsonl(raw_text, version=f"{path.stem}-1.0.0")
+
         return cls.from_json(raw_text)
+

@@ -97,6 +97,34 @@ def compute_jaccard_similarity(tokens_a: frozenset[str], tokens_b: frozenset[str
     return intersection_len / union_len
 
 
+def compute_kish_effective_sample_size(cluster_sizes: Sequence[int]) -> float:
+    """Compute Kish's effective sample size (n_eff) discounting redundancy across clusters.
+
+    Formula:
+        n_eff = (sum s_k)^2 / sum (s_k^2) = M^2 / sum (s_k^2)
+
+    Where:
+        s_k is the size of cluster k
+        M = sum(s_k) is the total item count across all clusters
+
+    Invariants:
+        - M == 0 -> 0.0
+        - Single cluster of size M -> 1.0 (complete redundancy discount)
+        - M singleton clusters of size 1 -> M (zero redundancy discount)
+        - 1 cluster of 4 + 2 singletons -> 36 / 18 = 2.0
+    """
+    if not cluster_sizes:
+        return 0.0
+    valid_sizes = [int(s) for s in cluster_sizes if s > 0]
+    if not valid_sizes:
+        return 0.0
+    total_m = sum(valid_sizes)
+    if total_m == 0:
+        return 0.0
+    sum_sq = sum(s * s for s in valid_sizes)
+    return round(float(total_m ** 2) / float(sum_sq), 4)
+
+
 def compute_char_ngram_jaccard(text_a: str, text_b: str, n: int = 3) -> float:
     """Compute character n-gram Jaccard similarity as an alternative lexical metric (§50)."""
     norm_a = normalize_text(text_a).lower()
@@ -437,12 +465,20 @@ class SourceIndependenceDetector:
             explanation=explanation,
         )
 
-    def compare_batch(self, items: Sequence[Any]) -> list[IndependencePairResult]:
+    def compare_batch(
+        self,
+        items: Sequence[Any],
+        batch_size: int = 10,
+    ) -> list[IndependencePairResult]:
         """Compare all canonical pairs in an evidence sequence (§28).
 
         Produces canonical pair ordering: (0, 1), (0, 2), ..., (1, 2), ...
         Without (B, A) inversion or self-comparison entries. Does NOT mutate inputs.
         """
+        if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
+            raise SourceIndependenceInputError(
+                f"batch_size must be an integer >= 1, got {batch_size!r}"
+            )
         if not isinstance(items, Sequence):
             raise SourceIndependenceInputError(
                 f"Expected Sequence for items, got {type(items).__name__}"
@@ -451,8 +487,11 @@ class SourceIndependenceDetector:
         if n < 2:
             return []
 
-        # Preprocess each item once to avoid redundant tokenization across O(N^2) pairs
-        preprocessed = [self._preprocess_item(it) for it in items]
+        # Preprocess items in memory-safe chunks
+        preprocessed = []
+        for i in range(0, n, batch_size):
+            chunk = items[i : i + batch_size]
+            preprocessed.extend(self._preprocess_item(it) for it in chunk)
 
         results: list[IndependencePairResult] = []
         for i in range(n):
@@ -460,12 +499,20 @@ class SourceIndependenceDetector:
                 results.append(self._compare_preprocessed(preprocessed[i], preprocessed[j]))
         return results
 
-    def analyze_set(self, items: Sequence[Any]) -> IndependenceSetResult:
+    def analyze_set(
+        self,
+        items: Sequence[Any],
+        batch_size: int = 10,
+    ) -> IndependenceSetResult:
         """Perform group-level complete-linkage redundancy clustering across an evidence set (§23, §24).
 
         Complete-linkage guarantees that all items in a cluster are mutually redundant,
         avoiding the chaining pathology of single-linkage clustering.
         """
+        if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
+            raise SourceIndependenceInputError(
+                f"batch_size must be an integer >= 1, got {batch_size!r}"
+            )
         if not isinstance(items, Sequence):
             raise SourceIndependenceInputError(
                 f"Expected Sequence for items, got {type(items).__name__}"
@@ -478,9 +525,10 @@ class SourceIndependenceDetector:
                 clusters=[],
                 independent_document_ids=[],
                 mean_pairwise_similarity=0.0,
+                kish_effective_sample_size=0.0,
             )
 
-        pairwise = self.compare_batch(items)
+        pairwise = self.compare_batch(items, batch_size=batch_size)
         doc_ids = [self._extract_document_fields(it)[0] for it in items]
 
         if n == 1:
@@ -490,6 +538,7 @@ class SourceIndependenceDetector:
                 clusters=[],
                 independent_document_ids=doc_ids,
                 mean_pairwise_similarity=0.0,
+                kish_effective_sample_size=1.0,
             )
 
         # Build adjacency matrix of redundant relationships (EXACT_DUPLICATE or REDUNDANT)
@@ -555,12 +604,18 @@ class SourceIndependenceDetector:
 
         independent_ids = [doc for doc in doc_ids if doc not in assigned]
 
+        # Compute cluster-level Kish effective sample size (n_eff):
+        # n_eff = M^2 / sum(s_k^2)
+        cluster_sizes = [len(c.document_ids) for c in clusters] + [1] * len(independent_ids)
+        kish_n_eff = compute_kish_effective_sample_size(cluster_sizes)
+
         return IndependenceSetResult(
             total_documents=n,
             pairwise_comparisons=pairwise,
             clusters=clusters,
             independent_document_ids=sorted(independent_ids),
             mean_pairwise_similarity=mean_sim,
+            kish_effective_sample_size=kish_n_eff,
         )
 
 

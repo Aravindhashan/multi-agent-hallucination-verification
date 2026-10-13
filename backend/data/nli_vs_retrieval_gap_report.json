@@ -1,0 +1,2464 @@
+{
+  "summary": {
+    "total_claims": 100,
+    "gold_accuracy": 0.56,
+    "retrieved_accuracy": 0.43,
+    "accuracy_gap": 0.13,
+    "retrieval_recall_at_top_k": 0.7,
+    "retrieval_recall_at_1": 0.7,
+    "error_partition": {
+      "both_correct_count": 34,
+      "both_correct_pct": 34.0,
+      "retrieval_failure_count": 22,
+      "retrieval_failure_pct": 22.0,
+      "model_failure_count": 35,
+      "model_failure_pct": 35.0,
+      "fortuitous_count": 9,
+      "fortuitous_pct": 9.0
+    },
+    "gold_confusion_matrix": {
+      "SUPPORT": {
+        "ENTAILMENT": 23,
+        "NEUTRAL": 24,
+        "CONTRADICTION": 3
+      },
+      "CONTRADICT": {
+        "ENTAILMENT": 2,
+        "NEUTRAL": 15,
+        "CONTRADICTION": 33
+      }
+    },
+    "retrieved_confusion_matrix": {
+      "SUPPORT": {
+        "ENTAILMENT": 22,
+        "NEUTRAL": 22,
+        "CONTRADICTION": 6
+      },
+      "CONTRADICT": {
+        "ENTAILMENT": 2,
+        "NEUTRAL": 27,
+        "CONTRADICTION": 21
+      }
+    },
+    "timing": {
+      "gold_inference_sec": 1177.18,
+      "retrieval_sec": 5.58,
+      "retrieved_inference_sec": 1009.4
+    }
+  },
+  "detailed_results": [
+    {
+      "claim_id": "scifact_3",
+      "claim_text": "1,000 genomes project enables mapping of genetic sequence variation consisting of rare variants with larger penetrance effects than common variants.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_14717500"
+      ],
+      "gold_premise_text": "We propose as an alternative explanation that variants much less common than the associated one may create \"synthetic associations\" by occurring, stochastically, more often in association with one of ",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0024,
+        "neutral": 0.9961,
+        "contradiction": 0.0015
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_14717500"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_5",
+      "claim_text": "1/2000 in UK have abnormal PrP positivity.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_13734012"
+      ],
+      "gold_premise_text": "RESULTS Of the 32,441 appendix samples 16 were positive for abnormal PrP, indicating an overall prevalence of 493 per million population (95% confidence interval 282 to 801 per million).",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0347,
+        "neutral": 0.9359,
+        "contradiction": 0.0294
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_13734012"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_49",
+      "claim_text": "ADAR1 binds to Dicer to cleave pre-miRNA.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_5953485"
+      ],
+      "gold_premise_text": "In this study, we investigated the interaction of the RNA editing mechanism with the RNA interference (RNAi) machinery and found that ADAR1 forms a complex with Dicer through direct protein-protein in",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.4088,
+        "neutral": 0.4027,
+        "contradiction": 0.1885
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_5953485"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_50",
+      "claim_text": "AIRE is expressed in some skin tumors.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_12580014"
+      ],
+      "gold_premise_text": "We report that autoimmune regulator (Aire), a transcriptional regulator, is inducibly expressed in human and mouse tumor keratinocytes in a K17-dependent manner and is required for timely onset of Gli",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9916,
+        "neutral": 0.0072,
+        "contradiction": 0.0013
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_12580014"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_53",
+      "claim_text": "ALDH1 expression is associated with poorer prognosis in breast cancer.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_45638119"
+      ],
+      "gold_premise_text": "In a series of 577 breast carcinomas, expression of ALDH1 detected by immunostaining correlated with poor prognosis.",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9942,
+        "neutral": 0.0051,
+        "contradiction": 0.0007
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_45638119"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_56",
+      "claim_text": "APOE4 expression in iPSC-derived neurons increases AlphaBeta production and tau phosphorylation causing GABA neuron degeneration.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_4709641"
+      ],
+      "gold_premise_text": "Using human neurons derived from induced pluripotent stem cells that expressed apolipoprotein E4 (ApoE4), a variant of the APOE gene product and the major genetic risk factor for AD, we demonstrated t",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.267,
+        "neutral": 0.4465,
+        "contradiction": 0.2865
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_4709641"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_70",
+      "claim_text": "Activation of PPM1D suppresses p53 function.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_5956380",
+        "scifact_4414547"
+      ],
+      "gold_premise_text": "PPM1D mutations were truncating alterations in exon 6 that enhanced the ability of PPM1D to suppress the activation of the DNA damage response checkpoint protein CHK2. These results define PPM1D as a ",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.8157,
+        "neutral": 0.0503,
+        "contradiction": 0.1339
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_5956380"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_100",
+      "claim_text": "All hematopoietic stem cells segregate their chromosomes randomly.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_4381486"
+      ],
+      "gold_premise_text": "In each case, less than 6% of HSCs retained BrdU and less than 0.5% of all BrdU-retaining haematopoietic cells were HSCs, revealing that BrdU has poor specificity and poor sensitivity as an HSC marker",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.002,
+        "neutral": 0.1974,
+        "contradiction": 0.8006
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_4381486"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_113",
+      "claim_text": "Angiotensin converting enzyme inhibitors are associated with increased risk for functional renal insufficiency.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_6157837"
+      ],
+      "gold_premise_text": "Although ACE inhibitor therapy usually improves renal blood flow (RBF) and sodium excretion rates in CHF and reduces the rate of progressive renal injury in chronic renal disease, its use can also be ",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0287,
+        "neutral": 0.9685,
+        "contradiction": 0.0028
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_6157837"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "FORTUITOUS"
+    },
+    {
+      "claim_id": "scifact_118",
+      "claim_text": "Antibiotic induced alterations in the gut microbiome reduce resistance against Clostridium difficile",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_6372244"
+      ],
+      "gold_premise_text": "Antibiotics can have significant and long-lasting effects on the gastrointestinal tract microbiota, reducing colonization resistance against pathogens including Clostridium difficile. In vitro and ex ",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9932,
+        "neutral": 0.006,
+        "contradiction": 0.0008
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_6372244"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_124",
+      "claim_text": "Antiretroviral therapy reduces rates of tuberculosis across a broad range of CD4 strata.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_4883040"
+      ],
+      "gold_premise_text": "Antiretroviral therapy is strongly associated with a reduction in the incidence of tuberculosis in all baseline CD4 count categories: (1) less than 200 cells/\u00b5l (hazard ratio [HR] 0.16, 95% confidence",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9085,
+        "neutral": 0.0862,
+        "contradiction": 0.0053
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_4883040"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_130",
+      "claim_text": "Articles published in open access format are more likely to be cited than traditional journals.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_27768226"
+      ],
+      "gold_premise_text": "It provides robust evidence that open-access articles (OA articles) are more immediately recognized and cited than non-OA articles. The results of this natural experiment are clear: in the 4 to 16 mon",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9729,
+        "neutral": 0.0251,
+        "contradiction": 0.0021
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_27768226"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_133",
+      "claim_text": "Assembly of invadopodia is triggered by focal generation of phosphatidylinositol-3,4-biphosphate and the activation of the nonreceptor tyrosine kinase Src.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_16280642"
+      ],
+      "gold_premise_text": "The expression of various phosphoinositide-binding domains revealed that the podosomes in Src-transformed NIH3T3 (NIH-src) cells are enriched with PtdIns(3,4)P2, suggesting an important role of this p",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.8684,
+        "neutral": 0.0849,
+        "contradiction": 0.0467
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_5270265"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_137",
+      "claim_text": "Asymptomatic visual impairment screening in elderly populations does not lead to improved vision.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_26016929"
+      ],
+      "gold_premise_text": "The inclusion of a visual screening component in the assessment did not result in improvements in self reported visual problems (pooled odds ratio 1.04:95% confidence interval 0.89 to 1.22). CONCLUSIO",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9924,
+        "neutral": 0.0067,
+        "contradiction": 0.0009
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_26016929"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_141",
+      "claim_text": "Auditory entrainment is strengthened when people see congruent visual and auditory information.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_14437255"
+      ],
+      "gold_premise_text": "UNLABELLED Congruent audiovisual speech enhances our ability to comprehend a speaker, even in noise-free conditions. When incongruent auditory and visual information is presented concurrently, it can ",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9819,
+        "neutral": 0.0146,
+        "contradiction": 0.0035
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_14437255"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_143",
+      "claim_text": "Autologous transplantation of mesenchymal stem cells causes fewer opportunistic infections than induction therapy with anti-interleukin-2 receptor antibodies.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_10582939"
+      ],
+      "gold_premise_text": "Also, during the 1-year follow-up, combined analysis of MSC-treated groups revealed significantly decreased risk of opportunistic infections than the control group (hazard ratio, 0.42; 95% CI, 0.20-0.",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9834,
+        "neutral": 0.0134,
+        "contradiction": 0.0032
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_10582939"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_146",
+      "claim_text": "Autologous transplantation of mesenchymal stem cells has lower rates of rejection than induction therapy with anti-interleukin-2 receptor antibodies.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_10582939"
+      ],
+      "gold_premise_text": "After 6 months, 4 of 53 patients (7.5%) in the autologous MSC plus standard-dose CNI group (95% CI, 0.4%-14.7%; P = .04) and 4 of 52 patients (7.7%) in the low-dose group (95% CI, 0.5%-14.9%; P = .046",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9761,
+        "neutral": 0.0209,
+        "contradiction": 0.003
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_10582939"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_148",
+      "claim_text": "Autophagy declines in aged organisms.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_1084345"
+      ],
+      "gold_premise_text": "We have previously found that CMA activity declines in aged organisms and have proposed that this failure in cellular clearance could contribute to the accumulation of altered proteins, the abnormal c",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.2838,
+        "neutral": 0.6241,
+        "contradiction": 0.0921
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_1084345"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "FORTUITOUS"
+    },
+    {
+      "claim_id": "scifact_163",
+      "claim_text": "Bariatric surgery has a positive impact on mental health.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_18872233"
+      ],
+      "gold_premise_text": "Bariatric surgery was, however, consistently associated with postoperative decreases in the prevalence of depression (7 studies; 8%-74% decrease) and the severity of depressive symptoms (6 studies; 40",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.1893,
+        "neutral": 0.8046,
+        "contradiction": 0.0061
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_18872233"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_179",
+      "claim_text": "Birth-weight is positively associated with breast cancer.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_16322674",
+        "scifact_27123743",
+        "scifact_23557241",
+        "scifact_17450673"
+      ],
+      "gold_premise_text": "Birth weight was positively associated with breast cancer risk in studies based on birth records (pooled relative risk [RR] per one standard deviation [SD] [= 0.5 kg] increment in birth weight: 1.06; ",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9903,
+        "neutral": 0.0051,
+        "contradiction": 0.0046
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_16322674"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_208",
+      "claim_text": "CHEK2 is not associated with breast cancer.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_13519661"
+      ],
+      "gold_premise_text": "We genotyped these six tagSNPs in 1,577 postmenopausal breast cancer cases and 1,513 population controls, but found no convincing association between any common CHEK2 haplotype and breast cancer risk.",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.7949,
+        "neutral": 0.155,
+        "contradiction": 0.05
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_13519661"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_217",
+      "claim_text": "CX3CR1 on the Th2 cells promotes T cell survival",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_21366394"
+      ],
+      "gold_premise_text": "We found that CX3CR1 signaling promoted T(H)2 survival in the inflamed lungs, and injection of B cell leukemia/lymphoma-2 protein (BCl-2)-transduced CX3CR1-deficient T(H)2 cells into CX3CR1-deficient ",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9072,
+        "neutral": 0.0765,
+        "contradiction": 0.0163
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_21366394"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_218",
+      "claim_text": "CX3CR1 on the Th2 cells promotes airway inflammation.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_21366394"
+      ],
+      "gold_premise_text": "Here we found that untreated CX3CR1-deficient mice or wild-type (WT) mice treated with CX3CR1-blocking reagents show reduced lung disease upon allergen sensitization and challenge. Transfer of WT CD4(",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0003,
+        "neutral": 0.0019,
+        "contradiction": 0.9978
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_21366394"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_230",
+      "claim_text": "Carriers of the alcohol aldehyde dehydrogenase deficiency mutation drink less that non-carries.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_3067015"
+      ],
+      "gold_premise_text": "Individuals homozygous for the null variant (*2*2) experience adverse symptoms when drinking alcohol and consequently drink considerably less alcohol than wild-type homozygotes (*1*1) or heterozygotes",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0603,
+        "neutral": 0.933,
+        "contradiction": 0.0067
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_3067015"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "FORTUITOUS"
+    },
+    {
+      "claim_id": "scifact_236",
+      "claim_text": "Cell autonomous sex determination in somatic cells occurs in Passeriformes.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_4388470"
+      ],
+      "gold_premise_text": "These studies demonstrated that gynandromorph birds are genuine male:female chimaeras, and indicated that male and female avian somatic cells may have an inherent sex identity. In an example where fem",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0176,
+        "neutral": 0.9806,
+        "contradiction": 0.0017
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_4388470"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "FORTUITOUS"
+    },
+    {
+      "claim_id": "scifact_239",
+      "claim_text": "Cellular aging closely links to an older appearance.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_14079881"
+      ],
+      "gold_premise_text": "Perceived age, controlled for chronological age and sex, also correlated significantly with physical and cognitive functioning as well as with leucocyte telomere length. CONCLUSION Perceived age-which",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0043,
+        "neutral": 0.9939,
+        "contradiction": 0.0018
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_615047"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_248",
+      "claim_text": "Chenodeosycholic acid treatment increases whole-body energy expenditure.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_1568684"
+      ],
+      "gold_premise_text": "In rodents, BAT can be activated by bile acids, which activate type 2 iodothyronine deiodinase (D2) in BAT via the G-coupled protein receptor TGR5, resulting in increased oxygen consumption and energy",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.7318,
+        "neutral": 0.1092,
+        "contradiction": 0.159
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_1568684"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_261",
+      "claim_text": "Chronic aerobic exercise alters endothelial function, improving vasodilating mechanisms mediated by NO.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_1122279",
+        "scifact_10697096"
+      ],
+      "gold_premise_text": "Relaxation to the endothelium-dependent vasodilator bradykinin was decreased (P<0.05) in arterioles isolated from collateral-dependent LCx versus nonoccluded LAD regions of SED animals. CONCLUSIONS Th",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.4439,
+        "neutral": 0.5503,
+        "contradiction": 0.0058
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_35271381"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_275",
+      "claim_text": "Combining phosphatidylinositide 3-kinase and MEK 1/2 inhibitors is effective at treating KRAS mutant tumors.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_4961038",
+        "scifact_14241418"
+      ],
+      "gold_premise_text": "However, when NVP-BEZ235 was combined with a mitogen-activated protein kinase kinase (MEK) inhibitor, ARRY-142886, there was marked synergy in shrinking these Kras-mutant cancers. These in vivo studie",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.3081,
+        "neutral": 0.6619,
+        "contradiction": 0.03
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_4961038"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_279",
+      "claim_text": "Commelina yellow mottle virus' (ComYMV) genome consists of 7489 baise pairs.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_14376683"
+      ],
+      "gold_premise_text": "Analysis of the genome sequence indicates that the genome is 7489 bp in size and that the transcribed strand contains three open reading frames capable of encoding proteins of 23, 15 and 216 kd.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0159,
+        "neutral": 0.1371,
+        "contradiction": 0.8471
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_14376683"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_295",
+      "claim_text": "Crosstalk between dendritic cells (DCs) and innate lymphoid cells (ILCs) is important in the regulation of intestinal homeostasis.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_20310709"
+      ],
+      "gold_premise_text": "TNF-\u03b1 produced by CD103(-)CD11b(+) dendritic cells synergized with IL-23 to drive IL-17A production by ILCs, demonstrating a previously unrecognized layer of cellular crosstalk between dendritic cells",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.4946,
+        "neutral": 0.4966,
+        "contradiction": 0.0088
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_20310709"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_298",
+      "claim_text": "Cytochrome c is released from the mitochondrial intermembrane space to cytosol during apoptosis.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_39381118"
+      ],
+      "gold_premise_text": "Apoptosis that proceeds via the mitochondrial pathway involves mitochondrial outer membrane permeabilization (MOMP), responsible for the release of cytochrome c and other proteins of the mitochondrial",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.754,
+        "neutral": 0.2436,
+        "contradiction": 0.0024
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_39381118"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_314",
+      "claim_text": "Deamination of cytidine to uridine on the minus strand of viral DNA results in catastrophic G-to-A mutations in the viral genome.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_4347374"
+      ],
+      "gold_premise_text": "APOBEC3G is closely related to APOBEC1, the central component of an RNA-editing complex that deaminates a cytosine residue in apoB messenger RNA. Here, we demonstrate that it does, as APOBEC3G exerts ",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0019,
+        "neutral": 0.9964,
+        "contradiction": 0.0016
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_544971"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_327",
+      "claim_text": "Deletion of \u03b1v\u03b28 does not result in a spontaneous inflammatory phenotype.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_17997584"
+      ],
+      "gold_premise_text": "Treg-cell-specific deletion of integrin \u03b1v\u03b28 did not result in a spontaneous inflammatory phenotype, suggesting that this pathway is not important in Treg-cell-mediated maintenance of immune homeostas",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9769,
+        "neutral": 0.0185,
+        "contradiction": 0.0046
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_17997584"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_343",
+      "claim_text": "Diabetic patients with acute coronary syndrome experience increased short-term and long-term risk for bleeding events.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_5884524"
+      ],
+      "gold_premise_text": "Diabetes independently predicted mortality (relative risk [RR], 1.57; 95% CI, 1.38 to 1.81; P:<0.001), as well as cardiovascular death, new myocardial infarction, stroke, and new congestive heart fail",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0046,
+        "neutral": 0.9809,
+        "contradiction": 0.0146
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_19308127"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_380",
+      "claim_text": "Enhanced early production of inflammatory chemokines improves viral control in the lung.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_19005293"
+      ],
+      "gold_premise_text": "We found that the response of memory, but not naive, CD4+ T cells enhances production of multiple innate inflammatory cytokines and chemokines (IICs) in the lung and that, during influenza infection, ",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9917,
+        "neutral": 0.0069,
+        "contradiction": 0.0015
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_19005293"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_385",
+      "claim_text": "Epigenetic modulating agents (EMAs) modulate antitumor immune response in a cancer model system.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_9955779"
+      ],
+      "gold_premise_text": "Use of this combination treatment schema in mouse models of NSCLC reverses tumor immune evasion and modulates T cell exhaustion state towards memory and effector T cell phenotypes.",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.3101,
+        "neutral": 0.6491,
+        "contradiction": 0.0408
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_1032372"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "FORTUITOUS"
+    },
+    {
+      "claim_id": "scifact_386",
+      "claim_text": "Errors in peripheral IV drug administration are most common during bolus administration and multiple-step medicine preparations.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_16495649"
+      ],
+      "gold_premise_text": "Most errors occurred when giving bolus doses or making up drugs that required multiple step preparation. A combination of reducing the amount of preparation on the ward, training, and technology to ad",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.1001,
+        "neutral": 0.8975,
+        "contradiction": 0.0024
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_16495649"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "FORTUITOUS"
+    },
+    {
+      "claim_id": "scifact_399",
+      "claim_text": "Exposure to fine particulate air pollution is relate to anxiety prevalence.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_791050"
+      ],
+      "gold_premise_text": "Significantly increased odds of high anxiety symptoms were observed with higher exposure to PM2.5 for multiple averaging periods (for example, odds ratio per 10 \u00b5g/m(3) increase in prior one month ave",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.5311,
+        "neutral": 0.4632,
+        "contradiction": 0.0057
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_791050"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_415",
+      "claim_text": "Female carriers of the Apolipoprotein E4 (APOE4) allele have increased risk for dementia.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_6309659"
+      ],
+      "gold_premise_text": "Risk of dementia associated with a longer reproductive period was most pronounced in APOE epsilon4 carriers (adjusted RR for >39 reproductive years compared with <34 reproductive years, 4.20 [95% CI, ",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.3041,
+        "neutral": 0.6873,
+        "contradiction": 0.0086
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_4709641"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_431",
+      "claim_text": "FoxO3a activation in neuronal death is mediated by reactive oxygen species (ROS).",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_28937856"
+      ],
+      "gold_premise_text": "Thus, one way in which members of the Sir2 family of proteins may increase organismal longevity is by tipping FOXO-dependent responses away from apoptosis and toward stress resistance.",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0007,
+        "neutral": 0.9899,
+        "contradiction": 0.0094
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_22696649"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_436",
+      "claim_text": "Free histones are degraded by a Rad53-dependent mechanism once DNA has been replicated.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_14637235"
+      ],
+      "gold_premise_text": "Although chromosomal histones are stable, excess (non-chromatin bound) histones are rapidly degraded in a Rad53 (radiation sensitive 53) kinase-dependent manner in Saccharomyces cerevisiae. Here we de",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.4307,
+        "neutral": 0.4863,
+        "contradiction": 0.083
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_14637235"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "FORTUITOUS"
+    },
+    {
+      "claim_id": "scifact_443",
+      "claim_text": "GATA-3 is important for hematopoietic stem cell (HSC) function.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_10165258"
+      ],
+      "gold_premise_text": "In the present study, we show that Gata3-null mutant mice generate fewer LT-HSCs and that fewer Gata3-null LT-HSCs are in cycle. Furthermore, Gata3 mutant hematopoietic progenitor cells fail to be rec",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.9894,
+        "neutral": 0.0098,
+        "contradiction": 0.0008
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_10165258"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_475",
+      "claim_text": "Glycolysis is one of the primary glycometabolic pathways in cells.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_18678095"
+      ],
+      "gold_premise_text": "We demonstrate that glycolysis provides ATP for the FAT of vesicles.",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0086,
+        "neutral": 0.9909,
+        "contradiction": 0.0005
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_195689757"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_501",
+      "claim_text": "Headaches are not correlated with cognitive impairment.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_17930286"
+      ],
+      "gold_premise_text": "Evidence was lacking for cognitive impairment for any headache type with or without brain lesions.",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.7747,
+        "neutral": 0.2182,
+        "contradiction": 0.0071
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_21274919"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_521",
+      "claim_text": "High-sensitivity cardiac troponin T (HSCT-T) dosage may not be diagnostic if the onset of symptoms occurs less than 3 hours before acute myocardial injury (AMI).",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_34873974"
+      ],
+      "gold_premise_text": "However, this method should be part of a comprehensive triage strategy and may not be appropriate for patients who present less than three hours after symptom onset.",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0218,
+        "neutral": 0.9763,
+        "contradiction": 0.0019
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_34873974"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_525",
+      "claim_text": "Histone demethylase recruitment and a transient decrease in histone methylation is necessary for ligand-dependent induction of transcription by nuclear receptors.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_13639330"
+      ],
+      "gold_premise_text": "This strategy, based at least in part on an HMT-dependent inhibitory histone code, imposes a requirement for specific histone demethylases, including LSD1, to permit ligand- and signal-dependent activ",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0161,
+        "neutral": 0.9831,
+        "contradiction": 0.0008
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_13639330"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_528",
+      "claim_text": "Human T-lymphotropic virus type-I-associated myelopathy / tropical spastic paraparesis (HAM/TSP) patients produce Immunoglobulin G (IgG) antibodies which cross-react with an immunodominant epitope in Tax.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_5476778"
+      ],
+      "gold_premise_text": "Antibodies to hnRNP-A1 cross-reacted with HTLV-1-tax, the immune response to which is associated with HAM/TSP (refs.",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.1182,
+        "neutral": 0.8725,
+        "contradiction": 0.0093
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_5476778"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_533",
+      "claim_text": "Hyperfibrinogenemia increases rates of femoropopliteal bypass thrombosis.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_12991445"
+      ],
+      "gold_premise_text": "RESULTS Markers for smoking (blood carboxyhaemoglobin concentration (p less than 0.05) and plasma thiocyanate concentration (p less than 0.01) and plasma concentrations of fibrinogen (p less than 0.00",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0053,
+        "neutral": 0.9923,
+        "contradiction": 0.0025
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_12991445"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_536",
+      "claim_text": "Hypocretin neurones induce panicprone state in rats.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_16056514"
+      ],
+      "gold_premise_text": "Here we show that activation of ORX-synthesizing neurons is necessary for developing a panic-prone state in the rat panic model, and either silencing of the hypothalamic gene encoding ORX (Hcrt) with ",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.8211,
+        "neutral": 0.1301,
+        "contradiction": 0.0488
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_16056514"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_42",
+      "claim_text": "A high microerythrocyte count raises vulnerability to severe anemia in homozygous alpha (+)- thalassemia trait subjects.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_18174210"
+      ],
+      "gold_premise_text": "Individuals homozygous for alpha(+)-thalassaemia have microcytosis and an increased erythrocyte count. We estimated that the haematological profile in children homozygous for alpha(+)-thalassaemia red",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0015,
+        "neutral": 0.0068,
+        "contradiction": 0.9918
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_18174210"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_48",
+      "claim_text": "A total of 1,000 people in the UK are asymptomatic carriers of vCJD infection.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_13734012"
+      ],
+      "gold_premise_text": "RESULTS Of the 32,441 appendix samples 16 were positive for abnormal PrP, indicating an overall prevalence of 493 per million population (95% confidence interval 282 to 801 per million).",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0068,
+        "neutral": 0.9295,
+        "contradiction": 0.0638
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_18617259"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_51",
+      "claim_text": "ALDH1 expression is associated with better breast cancer outcomes.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_45638119"
+      ],
+      "gold_premise_text": "In a series of 577 breast carcinomas, expression of ALDH1 detected by immunostaining correlated with poor prognosis.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0007,
+        "neutral": 0.0007,
+        "contradiction": 0.9986
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_45638119"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_54",
+      "claim_text": "AMP-activated protein kinase (AMPK) activation increases inflammation-related fibrosis in the lungs.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_49556906"
+      ],
+      "gold_premise_text": "Pharmacological activation of AMPK in myofibroblasts from lungs of humans with IPF display lower fibrotic activity, along with enhanced mitochondrial biogenesis and normalization of sensitivity to apo",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0002,
+        "neutral": 0.0024,
+        "contradiction": 0.9974
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_3973445"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_57",
+      "claim_text": "APOE4 expression in iPSC-derived neurons increases AlphaBeta production and tau phosphorylation, delaying GABA neuron degeneration.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_4709641"
+      ],
+      "gold_premise_text": "Using human neurons derived from induced pluripotent stem cells that expressed apolipoprotein E4 (ApoE4), a variant of the APOE gene product and the major genetic risk factor for AD, we demonstrated t",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0006,
+        "neutral": 0.0018,
+        "contradiction": 0.9976
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_4709641"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_115",
+      "claim_text": "Anthrax spores can be disposed of easily after they are dispersed.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_33872649"
+      ],
+      "gold_premise_text": "More than 80% of the B anthracis particles collected on stationary monitors were within an alveolar respirable size range of 0.95 to 3.5 micro m.",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0021,
+        "neutral": 0.9785,
+        "contradiction": 0.0194
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_33872649"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_129",
+      "claim_text": "Articles published in open access format are less likely to be cited than traditional journals.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_27768226"
+      ],
+      "gold_premise_text": "It provides robust evidence that open-access articles (OA articles) are more immediately recognized and cited than non-OA articles. The results of this natural experiment are clear: in the 4 to 16 mon",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0011,
+        "neutral": 0.0014,
+        "contradiction": 0.9975
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_27768226"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_142",
+      "claim_text": "Autologous transplantation of mesenchymal stem cells causes a higher rate of opportunistic infections than induction therapy with anti-interleukin-2 receptor antibodies.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_10582939"
+      ],
+      "gold_premise_text": "Also, during the 1-year follow-up, combined analysis of MSC-treated groups revealed significantly decreased risk of opportunistic infections than the control group (hazard ratio, 0.42; 95% CI, 0.20-0.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0004,
+        "neutral": 0.0008,
+        "contradiction": 0.9989
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_10582939"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_171",
+      "claim_text": "Basophils counteract disease development in patients with systemic lupus erythematosus (SLE).",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_12670680"
+      ],
+      "gold_premise_text": "We report that activation of basophils by autoreactive IgE causes their homing to lymph nodes, promoting T helper type 2 (T(H)2) cell differentiation and enhancing the production of self-reactive anti",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0039,
+        "neutral": 0.003,
+        "contradiction": 0.9931
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_12670680"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_180",
+      "claim_text": "Blocking the interaction between TDP-43 and respiratory complex I proteins ND3 and ND6 leads to increased TDP-43-induced neuronal loss.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_16966326"
+      ],
+      "gold_premise_text": "The suppression of TDP-43 mitochondrial localization abolishes WT and mutant TDP-43-induced mitochondrial dysfunction and neuronal loss, and improves phenotypes of transgenic mutant TDP-43 mice.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0001,
+        "neutral": 0.0008,
+        "contradiction": 0.9991
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_16966326"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_183",
+      "claim_text": "Bone marrow cells contribute to adult macrophage compartments.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_12827098"
+      ],
+      "gold_premise_text": "We also found that after bone marrow transplantation, host macrophages retained the capacity to expand when the development of donor macrophages was compromised.",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.6838,
+        "neutral": 0.3116,
+        "contradiction": 0.0046
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_8137081"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_185",
+      "claim_text": "Breast cancer development is determined exclusively by genetic factors.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_18340282"
+      ],
+      "gold_premise_text": "METHODS We tested gene-environment interactions in 7610 women who developed breast cancer and 10 196 controls without the disease, studying the effects of 12 polymorphisms (FGFR2-rs2981582, TNRC9-rs38",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0006,
+        "neutral": 0.0107,
+        "contradiction": 0.9887
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_21874312"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_212",
+      "claim_text": "CR is associated with higher methylation age.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_22038539"
+      ],
+      "gold_premise_text": "Epigenetic information encoded by DNA methylation is tightly regulated, but shows a striking drift associated with age that includes both gains and losses of DNA methylation at various sites. Twenty-t",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.2434,
+        "neutral": 0.1475,
+        "contradiction": 0.6092
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_22038539"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_216",
+      "claim_text": "CX3CR1 on the Th2 cells impairs T cell survival",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_21366394"
+      ],
+      "gold_premise_text": "We found that CX3CR1 signaling promoted T(H)2 survival in the inflamed lungs, and injection of B cell leukemia/lymphoma-2 protein (BCl-2)-transduced CX3CR1-deficient T(H)2 cells into CX3CR1-deficient ",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0003,
+        "neutral": 0.0007,
+        "contradiction": 0.999
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_21366394"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_219",
+      "claim_text": "CX3CR1 on the Th2 cells suppresses airway inflammation.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_21366394"
+      ],
+      "gold_premise_text": "Here we found that untreated CX3CR1-deficient mice or wild-type (WT) mice treated with CX3CR1-blocking reagents show reduced lung disease upon allergen sensitization and challenge. Transfer of WT CD4(",
+      "gold_prediction": "ENTAILMENT",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.8669,
+        "neutral": 0.0708,
+        "contradiction": 0.0623
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_21366394"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "FORTUITOUS"
+    },
+    {
+      "claim_id": "scifact_233",
+      "claim_text": "Cell autonomous sex determination in somatic cells does not occur in Galliformes.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_4388470"
+      ],
+      "gold_premise_text": "These studies demonstrated that gynandromorph birds are genuine male:female chimaeras, and indicated that male and female avian somatic cells may have an inherent sex identity. In an example where fem",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0236,
+        "neutral": 0.9152,
+        "contradiction": 0.0613
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_4388470"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_249",
+      "claim_text": "Chenodeosycholic acid treatment reduces whole-body energy expenditure.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_1568684"
+      ],
+      "gold_premise_text": "In rodents, BAT can be activated by bile acids, which activate type 2 iodothyronine deiodinase (D2) in BAT via the G-coupled protein receptor TGR5, resulting in increased oxygen consumption and energy",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0006,
+        "neutral": 0.0026,
+        "contradiction": 0.9968
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_25050364"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_274",
+      "claim_text": "Combination nicotine replacement therapies with varenicline or bupropion lead to significantly higher long-term abstinence rates at 52 weeks than varenicline monotherapy.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_11614737"
+      ],
+      "gold_premise_text": "At 52 weeks, 30.9% of the combination therapy group achieved prolonged and 36.6% achieved 7-day point-prevalence smoking abstinence compared with 24.5% and 29.2% in varenicline monotherapy (OR, 1.39; ",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0173,
+        "neutral": 0.0117,
+        "contradiction": 0.9711
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_11614737"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_338",
+      "claim_text": "Dexamethasone decreases risk of postoperative bleeding.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_23349986"
+      ],
+      "gold_premise_text": "Two of 53 (4%; 95% CI, 0.5%-13%) children who received placebo had bleeding compared with 6 of 53 (11%; 95% CI, 4%-23%), 2 of 51 (4%; 95% CI, 0.5%-13%), and 12 of 50 (24%; 95% CI, 13%-38%) who receive",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0026,
+        "neutral": 0.0726,
+        "contradiction": 0.9248
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_23349986"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_452",
+      "claim_text": "Gene expression does not vary appreciably across genetically identical cells.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_12804937",
+        "scifact_464511"
+      ],
+      "gold_premise_text": "Gene expression is a fundamentally stochastic process, with randomness in transcription and translation leading to cell-to-cell variations in mRNA and protein levels. Genetically identical cells shari",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0015,
+        "neutral": 0.0026,
+        "contradiction": 0.996
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_7042304"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_513",
+      "claim_text": "High cardiopulmonary fitness causes increased mortality rate.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_13230773"
+      ],
+      "gold_premise_text": "CONCLUSION Low fitness in adolescents and adults is common in the US population and is associated with an increased prevalence of CVD risk factors.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0003,
+        "neutral": 0.0117,
+        "contradiction": 0.988
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_13230773"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_516",
+      "claim_text": "High levels of CRP reduces the risk of exacerbations in chronic obstructive pulmonary disease (COPD).",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_29564505"
+      ],
+      "gold_premise_text": "In the first year of follow-up, multivariable-adjusted odds ratios for having frequent exacerbations were 1.2 (95% CI, 0.7-2.2; 17 events/1000 person-years) for individuals with 1 high biomarker, 1.7 ",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0005,
+        "neutral": 0.0009,
+        "contradiction": 0.9986
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_29564505"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_532",
+      "claim_text": "Hyperfibrinogenemia decreases rates of femoropopliteal bypass thrombosis.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_12991445"
+      ],
+      "gold_premise_text": "RESULTS Markers for smoking (blood carboxyhaemoglobin concentration (p less than 0.05) and plasma thiocyanate concentration (p less than 0.01) and plasma concentrations of fibrinogen (p less than 0.00",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0094,
+        "neutral": 0.9013,
+        "contradiction": 0.0892
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_12991445"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_578",
+      "claim_text": "In mouse models, the loss of CSF1R facilitates MOZ-TIF2-induced leuekmogenesis.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_8764879"
+      ],
+      "gold_premise_text": "Cells expressing high amounts of CSF1R (CSF1Rhigh cells), but not those expressing low amounts of CSF1R (CSF1Rlow cells), showed potent leukemia-initiating activity. Moreover, induction of AML was sup",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0386,
+        "neutral": 0.0539,
+        "contradiction": 0.9074
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_8764879"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_598",
+      "claim_text": "Incidence rates of cervical cancer have increased due to nationwide screening programs based primarily on cytology to detect uterine cervical cancer.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_25742130"
+      ],
+      "gold_premise_text": "Incidence and mortality rates have declined more in Finland. The decline in mortality in Finland seems to be almost completely related to the screening programme whereas in the Netherlands it was init",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0016,
+        "neutral": 0.9191,
+        "contradiction": 0.0793
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_27446873"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_619",
+      "claim_text": "Increased vessel density along with a reduction in fibrosis decreases the efficacy of chemotherapy treatments.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_20888849"
+      ],
+      "gold_premise_text": "We tested whether the delivery and efficacy of gemcitabine in the mice could be improved by coadministration of IPI-926, a drug that depletes tumor-associated stromal tissue by inhibition of the Hedge",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0063,
+        "neutral": 0.4116,
+        "contradiction": 0.5821
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_6673421"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_674",
+      "claim_text": "LDL cholesterol has no involvement in the development of cardiovascular disease.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_2095573"
+      ],
+      "gold_premise_text": "BACKGROUND LDL cholesterol has a causal role in the development of cardiovascular disease.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0002,
+        "neutral": 0.0003,
+        "contradiction": 0.9995
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_2095573"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_692",
+      "claim_text": "Leuko-increased blood increases infectious complications in red blood cell transfusion.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_24088502"
+      ],
+      "gold_premise_text": "Compared with the control period, the adjusted odds of death following leukoreduction were reduced (odds ratio [OR], 0.87; 95% confidence interval [CI], 0.75-0.99), but serious nosocomial infections d",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0245,
+        "neutral": 0.9588,
+        "contradiction": 0.0167
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_23203102"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_718",
+      "claim_text": "Low nucleosome occupancy correlates with low methylation levels across species.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_17587795"
+      ],
+      "gold_premise_text": "Clustered methylation occurs at unprecedented densities and directly disfavors nucleosomes, contributing to nucleosome positioning between clusters.",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0104,
+        "neutral": 0.8804,
+        "contradiction": 0.1093
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_22038539"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_728",
+      "claim_text": "Ly6C hi monocytes have a lower inflammatory capacity than Ly6C lo monocytes.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_36444198"
+      ],
+      "gold_premise_text": "Under inflammatory conditions elicited either by acute infection with Listeria monocytogenes or chronic infection with Leishmania major, there was a significant increase in immature Ly-6C(high) monocy",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0119,
+        "neutral": 0.9354,
+        "contradiction": 0.0527
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_22406695"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_743",
+      "claim_text": "Macrolides protect against myocardial infarction.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_32159283"
+      ],
+      "gold_premise_text": "No effect was found for previous use of macrolides (primarily erythromycin), sulfonamides, penicillins, or cephalosporins.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.001,
+        "neutral": 0.2549,
+        "contradiction": 0.7441
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_32159283"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_759",
+      "claim_text": "Mathematical models predict that using Artemisinin-based combination therapy over nongametocytocidal drugs have a dramatic impact in reducing malaria transmission.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_1805641"
+      ],
+      "gold_premise_text": "An efficacious antimalarial regimen with no specific gametocytocidal properties but a long prophylactic time was estimated to be more effective at reducing transmission than a short-acting ACT in the ",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0867,
+        "neutral": 0.8957,
+        "contradiction": 0.0176
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_1805641"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_781",
+      "claim_text": "Mice that lack Interferon-\u03b3 or its receptor exhibit high resistance to experimental autoimmune myocarditis.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_24338780"
+      ],
+      "gold_premise_text": "METHODS AND RESULTS We showed that IFN-gamma receptor-deficient mice (IFN-gammaR(-/-)) on a BALB/c background immunized with a peptide derived from cardiac alpha-myosin heavy chain develop severe myoc",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0048,
+        "neutral": 0.0054,
+        "contradiction": 0.9898
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_8246922"
+      ],
+      "retrieved_prediction": "ENTAILMENT",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_793",
+      "claim_text": "Mitochondria are uninvolved in apoptosis.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_8551160"
+      ],
+      "gold_premise_text": "Additionally, they participate in intermediary metabolism, calcium signaling, and apoptosis.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0001,
+        "neutral": 0.001,
+        "contradiction": 0.9988
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_8551160"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_811",
+      "claim_text": "Mutant mice lacking SVCT2 have greatly increased ascorbic acid levels in both brain and adrenals.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_19799455"
+      ],
+      "gold_premise_text": "Ascorbic-acid levels were undetectable or markedly reduced in the blood and tissues of Slc23a1\u2212/\u2212 mice. Brain hemorrhage was unlikely to be simply a form of scurvy since Slc23a1\u2212/\u2212 mice showed no hemo",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0002,
+        "neutral": 0.0151,
+        "contradiction": 0.9847
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_19799455"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_847",
+      "claim_text": "New drugs for tuberculosis often do not penetrate the necrotic portion of a tuberculosis lesion in high concentrations.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_16787954"
+      ],
+      "gold_premise_text": "Rifampicin even accumulates in necrotic caseum, a critical lesion site where persisting tubercle bacilli reside.",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0101,
+        "neutral": 0.6872,
+        "contradiction": 0.3027
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_16787954"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_852",
+      "claim_text": "Non-invasive ventilation use should be decreased if there is inadequate response to conventional treatment.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_13843341"
+      ],
+      "gold_premise_text": "Modelling of these data indicates that a typical UK hospital providing a non-invasive ventilation service will avoid six deaths and three to nine admissions to intensive care units per year, with an a",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0027,
+        "neutral": 0.9958,
+        "contradiction": 0.0015
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_13843341"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_859",
+      "claim_text": "Normal expression of RUNX1 has tumor-promoting effects.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_1982286"
+      ],
+      "gold_premise_text": "Notably, a network structure analysis of this hierarchical network identified RUNX1 as a key mediator of the T-ALL induced by TLX1 and TLX3 and predicted a tumor-suppressor role for RUNX1 in T cell tr",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.007,
+        "neutral": 0.9616,
+        "contradiction": 0.0314
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_22049489"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_873",
+      "claim_text": "Obesity is determined solely by environmental factors.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_1180972",
+        "scifact_19307912",
+        "scifact_27393799",
+        "scifact_29025270",
+        "scifact_3315558"
+      ],
+      "gold_premise_text": "In full siblings body mass index (kg/m2) significantly increased with weight of the adoptees. Body mass index of the half siblings showed a steady but weaker increase across the four weight groups of ",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0005,
+        "neutral": 0.0023,
+        "contradiction": 0.9972
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_52805891"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_879",
+      "claim_text": "Occupancy of ribosomes by IncRNAs do not make functional peptides.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_8426046"
+      ],
+      "gold_premise_text": "Here, we show that classical noncoding RNAs and 5' UTRs show the same ribosome occupancy as lincRNAs, demonstrating that ribosome occupancy alone is not sufficient to classify transcripts as coding or",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0323,
+        "neutral": 0.9106,
+        "contradiction": 0.0571
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_8426046"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "FORTUITOUS"
+    },
+    {
+      "claim_id": "scifact_882",
+      "claim_text": "Omnivores produce less trimethylamine N-oxide from dietary I-carnitine than vegetarians.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_14803797"
+      ],
+      "gold_premise_text": "Omnivorous human subjects produced more TMAO than did vegans or vegetarians following ingestion of L-carnitine through a microbiota-dependent mechanism.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0013,
+        "neutral": 0.0027,
+        "contradiction": 0.996
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_14803797"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_903",
+      "claim_text": "PD-1 triggering on monocytes reduces IL-10 production by monocytes.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_10648422"
+      ],
+      "gold_premise_text": "Triggering of PD-1 expressed on monocytes by PD-L1 expressed on various cell types induced IL-10 production and led to reversible CD4+ T cell dysfunction. We describe a new function for PD-1 whereby m",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0016,
+        "neutral": 0.0009,
+        "contradiction": 0.9975
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_10648422"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_922",
+      "claim_text": "Patients in stable partnerships have a faster progression from HIV to AIDS.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_17077004"
+      ],
+      "gold_premise_text": "In an analysis stratified by previous antiretroviral therapy and clinical stage when starting HAART (US Centers for Disease Control and Prevention group A, B, or C), the adjusted hazard ratio for prog",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0004,
+        "neutral": 0.0005,
+        "contradiction": 0.9992
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_17077004"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_993",
+      "claim_text": "Pyridostatin destabilizes the G - quadruplex in the telomeric region.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_16472469"
+      ],
+      "gold_premise_text": "Treatment with the G4-stabilizing compound pyridostatin (PDS) increases telomere fragility in BRCA2-deficient cells, suggesting that G4 formation drives telomere instability.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.1046,
+        "neutral": 0.0698,
+        "contradiction": 0.8256
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_25842866"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_1021",
+      "claim_text": "Rapid up-regulation and higher basal expression of interferon-induced genes reduce survival of granule cell neurons that are infected by West Nile virus.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_9433958"
+      ],
+      "gold_premise_text": "By transducing cortical neurons with genes that were expressed more highly in granule cell neurons, we identified three interferon-stimulated genes (ISGs; Ifi27, Irg1 and Rsad2 (also known as Viperin)",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0007,
+        "neutral": 0.9979,
+        "contradiction": 0.0014
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_10559501"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_1029",
+      "claim_text": "Reduced responsiveness to interleukin-2 in regulatory T cells is associated with greater resistance to autoimmune diseases such as Type 1 Diabetes.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_13923140",
+        "scifact_13940200",
+        "scifact_11899391"
+      ],
+      "gold_premise_text": "In order to test directly that an approximately twofold reduction in IL-2 underpins the Idd3-linked destabilization of immune homeostasis, we show that engineered haplodeficiency of Il2 gene expressio",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0022,
+        "neutral": 0.0422,
+        "contradiction": 0.9557
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_11899391"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_1041",
+      "claim_text": "Replacement of histone H2A with H2A.Z slows gene activation in yeasts by stabilizing +1 nucleosomes.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_25254425"
+      ],
+      "gold_premise_text": "Immunoprecipitation studies of nucleosome core particles (NCPs) show that NCPs that contain both H3.3 and H2A.Z are even less stable than NCPs containing H3.3 and H2A.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0002,
+        "neutral": 0.0045,
+        "contradiction": 0.9953
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_9451052"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_1049",
+      "claim_text": "Ribosomopathies have a low degree of cell and tissue specific pathology.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_12486491"
+      ],
+      "gold_premise_text": "Unexpectedly, a ribosomal protein (RP) expression screen reveals dynamic regulation of individual RPs within the vertebrate embryo. Collectively, these findings suggest that RP activity may be highly ",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0207,
+        "neutral": 0.2677,
+        "contradiction": 0.7116
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_24737389"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "RETRIEVAL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_1088",
+      "claim_text": "Silencing of Bcl2 is important for the maintenance and progression of tumors.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_37549932"
+      ],
+      "gold_premise_text": "Eliminating BCL-2 yielded rapid loss of leukemic cells and significantly prolonged survival, formally validating BCL-2 as a rational target for cancer therapy.",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0034,
+        "neutral": 0.0096,
+        "contradiction": 0.987
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_11915280"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    },
+    {
+      "claim_id": "scifact_1110",
+      "claim_text": "Suboptimal nutrition is not predictive of chronic disease",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_13770184"
+      ],
+      "gold_premise_text": "In 2015, the ten largest contributors to global DALYs among Level 3 risks were high systolic blood pressure (211\u00b78 million [192\u00b77 million to 231\u00b71 million] global DALYs), smoking (148\u00b76 million [134\u00b72",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0482,
+        "neutral": 0.8653,
+        "contradiction": 0.0865
+      },
+      "retrieval_recall_hit": false,
+      "retrieval_gold_rank": null,
+      "retrieved_doc_ids": [
+        "scifact_756887"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    }
+  ]
+}

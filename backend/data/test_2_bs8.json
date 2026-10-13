@@ -1,0 +1,104 @@
+{
+  "summary": {
+    "model_name": "MoritzLaurer/DeBERTa-v3-large-mnli-fever-anli-ling-wanli",
+    "total_claims": 2,
+    "gold_accuracy": 0.5,
+    "retrieved_accuracy": 0.5,
+    "accuracy_gap": 0.0,
+    "retrieval_recall_at_top_k": 1.0,
+    "retrieval_recall_at_1": 1.0,
+    "error_partition": {
+      "both_correct_count": 1,
+      "both_correct_pct": 50.0,
+      "retrieval_failure_count": 0,
+      "retrieval_failure_pct": 0.0,
+      "model_failure_count": 1,
+      "model_failure_pct": 50.0,
+      "fortuitous_count": 0,
+      "fortuitous_pct": 0.0
+    },
+    "gold_confusion_matrix": {
+      "SUPPORT": {
+        "ENTAILMENT": 0,
+        "NEUTRAL": 1,
+        "CONTRADICTION": 0
+      },
+      "CONTRADICT": {
+        "ENTAILMENT": 0,
+        "NEUTRAL": 0,
+        "CONTRADICTION": 1
+      }
+    },
+    "retrieved_confusion_matrix": {
+      "SUPPORT": {
+        "ENTAILMENT": 0,
+        "NEUTRAL": 1,
+        "CONTRADICTION": 0
+      },
+      "CONTRADICT": {
+        "ENTAILMENT": 0,
+        "NEUTRAL": 0,
+        "CONTRADICTION": 1
+      }
+    },
+    "timing": {
+      "gold_inference_sec": 116.7,
+      "retrieval_sec": 0.11,
+      "retrieved_inference_sec": 208.06
+    }
+  },
+  "detailed_results": [
+    {
+      "claim_id": "scifact_3",
+      "claim_text": "1,000 genomes project enables mapping of genetic sequence variation consisting of rare variants with larger penetrance effects than common variants.",
+      "gold_label": "SUPPORT",
+      "gold_doc_ids": [
+        "scifact_14717500"
+      ],
+      "gold_premise_text": "We propose as an alternative explanation that variants much less common than the associated one may create \"synthetic associations\" by occurring, stochastically, more often in association with one of ",
+      "gold_prediction": "NEUTRAL",
+      "gold_is_correct": false,
+      "gold_probs": {
+        "entailment": 0.0023,
+        "neutral": 0.9977,
+        "contradiction": 0.0001
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_14717500",
+        "scifact_2739854",
+        "scifact_3672261"
+      ],
+      "retrieved_prediction": "NEUTRAL",
+      "retrieved_is_correct": false,
+      "category": "MODEL_FAILURE"
+    },
+    {
+      "claim_id": "scifact_42",
+      "claim_text": "A high microerythrocyte count raises vulnerability to severe anemia in homozygous alpha (+)- thalassemia trait subjects.",
+      "gold_label": "CONTRADICT",
+      "gold_doc_ids": [
+        "scifact_18174210"
+      ],
+      "gold_premise_text": "Individuals homozygous for alpha(+)-thalassaemia have microcytosis and an increased erythrocyte count. We estimated that the haematological profile in children homozygous for alpha(+)-thalassaemia red",
+      "gold_prediction": "CONTRADICTION",
+      "gold_is_correct": true,
+      "gold_probs": {
+        "entailment": 0.0005,
+        "neutral": 0.0004,
+        "contradiction": 0.9991
+      },
+      "retrieval_recall_hit": true,
+      "retrieval_gold_rank": 1,
+      "retrieved_doc_ids": [
+        "scifact_18174210",
+        "scifact_40913091",
+        "scifact_6315132"
+      ],
+      "retrieved_prediction": "CONTRADICTION",
+      "retrieved_is_correct": true,
+      "category": "BOTH_CORRECT"
+    }
+  ]
+}
