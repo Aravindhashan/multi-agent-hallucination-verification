@@ -1,230 +1,375 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hallucination Verifier Pipeline</title>
+    <title>Hallucination Verifier · Multi-Agent Debate Engine</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
                     colors: {
-                        primary: '#2563eb',
-                        success: '#16a34a',
-                        danger: '#dc2626',
-                        warning: '#eab308'
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                            950: '#1e1b4b',
+                        },
+                        obsidian: {
+                            base: '#0B0F19',
+                            surface: '#111827',
+                            card: '#161F32',
+                            elevated: '#1E293B',
+                            border: 'rgba(255, 255, 255, 0.08)',
+                            glow: 'rgba(99, 102, 241, 0.15)',
+                        }
                     }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .spinner { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
-        
-        .claim-card { transition: all 0.2s ease-in-out; }
-        .claim-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0B0F19;
+            color: #F8FAFC;
+        }
+        /* Custom Modern Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0B0F19; }
+        ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(22, 31, 50, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(99, 102, 241, 0.35);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(99, 102, 241, 0.15);
+        }
+        .pulse-emerald {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-emerald 2s infinite;
+        }
+        @keyframes pulse-emerald {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #A5B4FC 0%, #818CF8 50%, #C084FC 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen text-gray-800 flex flex-col">
+<body class="min-h-screen flex flex-col bg-[#0B0F19] text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
 
-    <!-- Navbar -->
-    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Top Navigation Bar -->
+    <header class="glass-panel sticky top-0 z-40 border-b border-slate-800/80 bg-[#0B0F19]/80">
+        <div class="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
+                <!-- Brand / Logo -->
                 <div class="flex items-center gap-3">
-                    <div class="bg-primary text-white p-2 rounded-lg">
-                        <i class="fas fa-shield-halved text-xl"></i>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-1 ring-white/20">
+                        <i class="fas fa-shield-halved text-white text-lg"></i>
                     </div>
-                    <span class="font-bold text-xl tracking-tight text-gray-900">Hallucination Verifier</span>
-                    <span class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        v1.0 (Local Pipeline)
-                    </span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-lg tracking-tight text-white font-sans">Hallucination<span class="text-indigo-400">Verifier</span></span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.0 PRO</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 hidden sm:block">Multi-Agent Adversarial Debate & Federated Evidence Calibration</p>
+                    </div>
                 </div>
-                <div class="flex items-center gap-4 text-sm text-gray-500">
-                    <span><i class="fas fa-microchip mr-1"></i> DeBERTa-v3 Adjudication</span>
-                    <span><i class="fas fa-database mr-1"></i> Federated Search</span>
+
+                <!-- Status Indicators -->
+                <div class="flex items-center gap-3 sm:gap-6 text-xs text-slate-400 font-mono">
+                    <div class="flex items-center gap-2 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-lg">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-emerald"></span>
+                        <span class="text-slate-300 font-medium">DeBERTa-v3 NLI</span>
+                        <span class="text-slate-500 text-[10px] hidden md:inline">CPU Native</span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-lg hidden sm:flex">
+                        <i class="fas fa-network-wired text-indigo-400"></i>
+                        <span class="text-slate-300 font-medium">Federated Search</span>
+                        <span class="text-slate-500 text-[10px] hidden lg:inline">PubMed + Web</span>
+                    </div>
+                    <a href="https://github.com/Aravindhashan/multi-agent-hallucination-verification" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition-colors p-2 text-base">
+                        <i class="fab fa-github"></i>
+                    </a>
                 </div>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+    <!-- Main Application Container -->
+    <main class="flex-grow max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
             
-            <!-- Left Column: Input Form -->
-            <div class="lg:col-span-4 flex flex-col gap-6 h-[calc(100vh-8rem)]">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col h-full">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Verification Parameters</h2>
+            <!-- Left Console: Input Form & Settings -->
+            <div class="lg:col-span-4 flex flex-col gap-5">
+                <div class="glass-panel rounded-2xl p-5 sm:p-6 border border-slate-800/90 shadow-2xl flex flex-col h-full bg-[#111827]/60">
                     
-                    <form id="verifyForm" class="flex flex-col h-full gap-4">
-                        <div class="flex flex-col gap-1">
-                            <label for="query" class="text-sm font-medium text-gray-700">Original Prompt / Query (Optional)</label>
-                            <textarea id="query" rows="2" class="w-full rounded-md border border-gray-300 p-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow" placeholder="e.g. What is the efficacy of Paracetamol?"></textarea>
-                        </div>
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                            <i class="fas fa-terminal text-indigo-400 text-xs"></i>
+                            Verification Console
+                        </h2>
+                        <span class="text-[11px] font-mono text-slate-400">Local Inference</span>
+                    </div>
+
+                    <form id="verifyForm" class="flex flex-col flex-grow gap-4">
                         
-                        <div class="flex flex-col gap-1 flex-grow">
+                        <!-- Original Prompt / Context -->
+                        <div class="flex flex-col gap-1.5">
                             <div class="flex justify-between items-center">
-                                <label for="response" class="text-sm font-medium text-gray-700">Response to Verify <span class="text-red-500">*</span></label>
-                                <div class="flex gap-1.5 flex-wrap">
-                                    <button type="button" id="btnSampleFact" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Fact Demo</button>
-                                    <button type="button" id="btnSampleHallucination" class="text-[11px] font-medium text-red-600 hover:text-red-800 bg-red-50 px-2 py-0.5 rounded border border-red-200">Hallucination Demo</button>
-                                    <button type="button" id="btnSamplePCSK9" class="text-[11px] font-medium text-purple-600 hover:text-purple-800 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">PCSK9 Live Demo</button>
-                                </div>
+                                <label for="query" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                                    <i class="fas fa-question-circle text-slate-400 text-[10px]"></i> Original Query / Context <span class="text-slate-500 font-normal">(Optional)</span>
+                                </label>
                             </div>
-                            <textarea id="response" class="w-full rounded-md border border-gray-300 p-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow flex-grow resize-none" placeholder="Paste the LLM output you want to verify here...&#10;&#10;e.g., Paracetamol is highly effective for curing severe migraines and also treats viral infections." required></textarea>
+                            <textarea id="query" rows="2" class="w-full rounded-xl bg-slate-900/90 border border-slate-700/60 p-3 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all resize-none font-sans" placeholder="e.g. What is the clinical efficacy and safety of Aspirin?"></textarea>
                         </div>
 
-                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm flex flex-col gap-3">
-                            <label class="font-medium text-gray-700 border-b pb-1">Engine & Speed Settings</label>
-                            <div class="flex items-center justify-between">
-                                <span class="text-gray-600 text-xs font-medium">Retrieval Mode</span>
-                                <select id="mode" class="border border-gray-300 rounded p-1 text-xs bg-white font-medium">
-                                    <option value="hybrid" selected>Hybrid (Local PubMed + Web Fallback)</option>
-                                    <option value="live_web">Live Web (DuckDuckGo + Wikipedia)</option>
-                                    <option value="benchmark_scifact">SciFact (Local PubMed BM25)</option>
+                        <!-- Response to Verify -->
+                        <div class="flex flex-col gap-1.5 flex-grow">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                <label for="response" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                                    <i class="fas fa-file-lines text-indigo-400 text-[10px]"></i> Response Passage <span class="text-rose-400">*</span>
+                                </label>
+                                <span class="text-[10px] font-mono text-slate-500" id="charCounter">0 chars</span>
+                            </div>
+
+                            <!-- Preset Chips -->
+                            <div class="flex gap-1.5 flex-wrap my-1">
+                                <button type="button" id="btnSampleFact" class="text-[11px] font-medium text-emerald-400 hover:text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/40 px-2.5 py-1 rounded-lg border border-emerald-500/30 transition-all flex items-center gap-1">
+                                    <i class="fas fa-check text-[10px]"></i> Cardio Fact
+                                </button>
+                                <button type="button" id="btnSampleHallucination" class="text-[11px] font-medium text-rose-400 hover:text-rose-300 bg-rose-950/40 hover:bg-rose-900/40 px-2.5 py-1 rounded-lg border border-rose-500/30 transition-all flex items-center gap-1">
+                                    <i class="fas fa-bug text-[10px]"></i> Refuted Myth
+                                </button>
+                                <button type="button" id="btnSamplePCSK9" class="text-[11px] font-medium text-purple-400 hover:text-purple-300 bg-purple-950/40 hover:bg-purple-900/40 px-2.5 py-1 rounded-lg border border-purple-500/30 transition-all flex items-center gap-1">
+                                    <i class="fas fa-dna text-[10px]"></i> PCSK9 Genetics
+                                </button>
+                                <button type="button" id="btnSampleList" class="text-[11px] font-medium text-teal-400 hover:text-teal-300 bg-teal-950/40 hover:bg-teal-900/40 px-2.5 py-1 rounded-lg border border-teal-500/30 transition-all flex items-center gap-1">
+                                    <i class="fas fa-list-check text-[10px]"></i> Unanchored List
+                                </button>
+                            </div>
+
+                            <textarea id="response" class="w-full rounded-xl bg-slate-900/90 border border-slate-700/60 p-3 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all flex-grow min-h-[160px] resize-none font-sans leading-relaxed" placeholder="Paste generated text to audit...&#10;&#10;e.g. Aspirin reduces cardiovascular mortality and lowers the risk of myocardial infarction." required></textarea>
+                        </div>
+
+                        <!-- Engine Controls & Hyperparameters -->
+                        <div class="bg-slate-900/80 rounded-xl border border-slate-800 p-3.5 flex flex-col gap-3">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-medium text-slate-400 flex items-center gap-1.5">
+                                    <i class="fas fa-compass text-indigo-400 text-[10px]"></i> Retrieval Mode
+                                </span>
+                                <select id="mode" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs font-mono focus:border-indigo-500 outline-none cursor-pointer">
+                                    <option value="hybrid" selected>Hybrid (PubMed + Web)</option>
+                                    <option value="live_web">Live Web (DuckDuckGo + Wiki)</option>
+                                    <option value="benchmark_scifact">SciFact (Local PubMed)</option>
                                     <option value="toy">Toy (Offline Mock)</option>
                                 </select>
                             </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-gray-600 text-xs font-medium">Debate Rounds</span>
-                                <select id="debateRounds" class="border border-gray-300 rounded p-1 text-xs bg-white font-medium">
-                                    <option value="1" selected>1 Round (Fastest for Review)</option>
-                                    <option value="2">2 Rounds (Full Deep Debate)</option>
+                            <div class="flex items-center justify-between text-xs border-t border-slate-800/80 pt-2.5">
+                                <span class="font-medium text-slate-400 flex items-center gap-1.5">
+                                    <i class="fas fa-comments text-indigo-400 text-[10px]"></i> Debate Rounds
+                                </span>
+                                <select id="debateRounds" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs font-mono focus:border-indigo-500 outline-none cursor-pointer">
+                                    <option value="1" selected>1 Round (Fast)</option>
+                                    <option value="2">2 Rounds (Deep Debate)</option>
                                 </select>
                             </div>
                         </div>
 
-                        <button type="submit" id="verifyBtn" class="mt-auto w-full bg-primary hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-sm">
-                            <i class="fas fa-magnifying-glass"></i>
-                            Verify Response
+                        <!-- Submit Verification CTA -->
+                        <button type="submit" id="verifyBtn" class="w-full mt-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3.5 px-4 rounded-xl transition-all flex justify-center items-center gap-2.5 shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 active:scale-[0.99] cursor-pointer">
+                            <i class="fas fa-magnifying-glass text-sm"></i>
+                            <span class="tracking-wide text-sm">Verify Response</span>
                         </button>
                     </form>
                 </div>
             </div>
 
-            <!-- Right Column: Results & Dashboard -->
-            <div class="lg:col-span-8 flex flex-col h-[calc(100vh-8rem)]">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-full overflow-hidden">
+            <!-- Right Column: Analytics, Provenance & Multi-Agent Debate Arena -->
+            <div class="lg:col-span-8 flex flex-col">
+                <div class="glass-panel rounded-2xl border border-slate-800/90 shadow-2xl flex flex-col h-full overflow-hidden bg-[#111827]/60">
                     
-                    <!-- Header -->
-                    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center shrink-0">
-                        <h2 class="text-lg font-semibold text-gray-900"><i class="fas fa-chart-pie text-gray-500 mr-2"></i> Analysis Dashboard</h2>
-                        <span id="statusBadge" class="px-2.5 py-1 rounded text-xs font-medium bg-gray-200 text-gray-600 uppercase tracking-wide">Ready</span>
-                    </div>
-
-                    <!-- Idle State -->
-                    <div id="idleState" class="flex-grow flex flex-col items-center justify-center p-8 text-center text-gray-500">
-                        <div class="bg-gray-100 p-6 rounded-full mb-4">
-                            <i class="fas fa-clipboard-check text-4xl text-gray-400"></i>
+                    <!-- Dashboard Header -->
+                    <div class="px-6 py-4 border-b border-slate-800 bg-slate-900/60 flex justify-between items-center shrink-0">
+                        <div class="flex items-center gap-3">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xs">
+                                <i class="fas fa-chart-simple"></i>
+                            </div>
+                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Adjudication Dashboard</h2>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900">No Data to Display</h3>
-                        <p class="mt-2 text-sm max-w-md">Enter a prompt and response on the left, then click "Verify Response" to run the hallucination detection pipeline.</p>
+                        <span id="statusBadge" class="px-3 py-1 rounded-full text-[11px] font-mono font-semibold bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider">Ready</span>
                     </div>
 
-                    <!-- Loading State -->
-                    <div id="loadingState" class="hidden flex-grow flex flex-col items-center justify-center p-8 text-center bg-white">
+                    <!-- State 1: Idle Screen -->
+                    <div id="idleState" class="flex-grow flex flex-col items-center justify-center p-12 text-center text-slate-500 min-h-[500px]">
+                        <div class="w-20 h-20 rounded-2xl bg-slate-800/40 border border-slate-700/60 flex items-center justify-center mb-5 text-slate-400">
+                            <i class="fas fa-scale-balanced text-3xl"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-slate-200">Adjudication Pipeline Idle</h3>
+                        <p class="mt-2 text-xs text-slate-400 max-w-md leading-relaxed">
+                            Input a passage in the Verification Console or select one of the demonstration presets to launch the multi-agent debate, evidence quality decontamination, and DeBERTa cross-encoder calibration.
+                        </p>
+                        <div class="mt-6 flex flex-wrap gap-2 justify-center text-[11px] font-mono text-slate-500">
+                            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-800">✓ Strict NLI Thresholds</span>
+                            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-800">✓ Pollution Decontamination</span>
+                            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-800">✓ Consensus Verification</span>
+                        </div>
+                    </div>
+
+                    <!-- State 2: Active Pipeline Progress -->
+                    <div id="loadingState" class="hidden flex-grow flex flex-col items-center justify-center p-12 text-center bg-slate-950/40 min-h-[500px]">
                         <div class="relative w-24 h-24 mb-6">
-                            <div class="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
-                            <div class="absolute inset-0 border-4 border-transparent border-t-primary rounded-full animate-spin"></div>
+                            <div class="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
+                            <div class="absolute inset-0 border-4 border-transparent border-t-indigo-500 border-r-purple-500 rounded-full animate-spin"></div>
                             <div class="absolute inset-0 flex items-center justify-center">
-                                <i class="fas fa-microchip text-2xl text-primary"></i>
+                                <i class="fas fa-microchip text-2xl text-indigo-400 animate-pulse"></i>
                             </div>
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Executing Pipeline</h3>
-                        <div class="text-sm text-gray-500 max-w-sm" id="loadingSteps">
-                            <p class="flex items-center gap-2 justify-center"><i class="fas fa-circle-notch fa-spin text-primary" id="stepIcon"></i> <span id="stepText">Processing claims and evidence...</span></p>
+                        <h3 class="text-lg font-bold text-slate-100 mb-2">Executing Verification Pipeline</h3>
+                        <div class="text-xs text-slate-400 max-w-md bg-slate-900/90 border border-slate-800 rounded-xl p-3" id="loadingSteps">
+                            <p class="flex items-center gap-2 justify-center font-mono">
+                                <i class="fas fa-circle-notch fa-spin text-indigo-400" id="stepIcon"></i>
+                                <span id="stepText">Decomposing passage into atomic claims...</span>
+                            </p>
                         </div>
-                        <div id="liveTimer" class="mt-4 text-xs font-mono text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                        <div id="liveTimer" class="mt-4 text-xs font-mono text-slate-400 bg-slate-900 border border-slate-800 px-3.5 py-1 rounded-full">
                             Elapsed: 0.0s
                         </div>
                     </div>
 
-                    <!-- Results State -->
-                    <div id="resultsState" class="hidden flex-grow flex flex-col overflow-y-auto bg-gray-50/50 relative">
-                        <!-- Top Summary Stats -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-0 border-b border-gray-200 bg-white sticky top-0 z-10 shrink-0">
-                            <div class="p-5 border-r border-gray-200 flex flex-col items-center justify-center text-center">
-                                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Global H-Index (Refuted)</span>
+                    <!-- State 3: Rendered Results -->
+                    <div id="resultsState" class="hidden flex-grow flex flex-col overflow-y-auto max-h-[calc(100vh-12rem)] relative">
+                        
+                        <!-- Top Summary KPI Banner -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-0 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+                            
+                            <!-- KPI 1: Hallucination Index H -->
+                            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col items-center justify-center text-center">
+                                <span class="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                                    Global H-Index (Refuted)
+                                </span>
                                 <div class="flex items-baseline gap-1">
-                                    <span id="hIndexValue" class="text-4xl font-bold text-gray-900">0.00</span>
+                                    <span id="hIndexValue" class="text-4xl font-extrabold tracking-tight font-mono text-emerald-400">0.00</span>
                                 </div>
-                                <div class="flex items-center gap-1.5 mt-1 flex-wrap justify-center">
-                                    <span id="hIndexLabel" class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-800">Highly Factual</span>
-                                    <span id="uIndexBadge" class="text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 hidden">Coverage Gap: 0%</span>
+                                <div class="flex items-center gap-1.5 mt-2 flex-wrap justify-center">
+                                    <span id="hIndexLabel" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/30">Highly Factual</span>
+                                    <span id="uIndexBadge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/30 hidden">Coverage Gap: 0%</span>
                                 </div>
                             </div>
-                            <div class="p-5 border-r border-gray-200 flex flex-col items-center justify-center text-center">
-                                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Overall Verdict</span>
-                                <span id="overallVerdict" class="text-2xl font-bold text-gray-900 mt-1">SUPPORTED</span>
-                                <span id="confidenceScore" class="text-xs text-gray-500 mt-2">Aggregated Confidence: 95%</span>
+
+                            <!-- KPI 2: Overall Adjudication Verdict -->
+                            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col items-center justify-center text-center">
+                                <span class="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                                    Final Adjudication
+                                </span>
+                                <span id="overallVerdict" class="text-2xl font-black tracking-wide text-emerald-400 mt-0.5">SUPPORTED</span>
+                                <span id="confidenceScore" class="text-[11px] font-mono text-slate-400 mt-2">Aggregated Confidence: 95%</span>
                             </div>
+
+                            <!-- KPI 3: Pipeline Performance Metrics -->
                             <div class="p-5 flex flex-col items-center justify-center text-center">
-                                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pipeline Metrics</span>
-                                <div class="flex gap-4 mt-2 w-full justify-center">
-                                    <div class="text-center">
-                                        <div id="claimsCount" class="text-xl font-bold text-gray-800">0</div>
-                                        <div class="text-[10px] text-gray-500 uppercase">Claims</div>
+                                <span class="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                                    Pipeline Telemetry
+                                </span>
+                                <div class="grid grid-cols-3 gap-3 mt-1 w-full max-w-[260px]">
+                                    <div class="bg-slate-800/40 border border-slate-800 rounded-lg p-1.5">
+                                        <div id="claimsCount" class="text-lg font-bold font-mono text-slate-200">0</div>
+                                        <div class="text-[9px] text-slate-500 uppercase font-mono">Claims</div>
                                     </div>
-                                    <div class="text-center">
-                                        <div id="evidenceCount" class="text-xl font-bold text-gray-800">0</div>
-                                        <div class="text-[10px] text-gray-500 uppercase">Evidence</div>
+                                    <div class="bg-slate-800/40 border border-slate-800 rounded-lg p-1.5">
+                                        <div id="evidenceCount" class="text-lg font-bold font-mono text-slate-200">0</div>
+                                        <div class="text-[9px] text-slate-500 uppercase font-mono">Evidence</div>
                                     </div>
-                                    <div class="text-center">
-                                        <div id="processingTime" class="text-xl font-bold text-gray-800">0s</div>
-                                        <div class="text-[10px] text-gray-500 uppercase">Time</div>
+                                    <div class="bg-slate-800/40 border border-slate-800 rounded-lg p-1.5">
+                                        <div id="processingTime" class="text-lg font-bold font-mono text-slate-200">0s</div>
+                                        <div class="text-[9px] text-slate-500 uppercase font-mono">Time</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Internet Sources Section -->
-                        <div id="sourcesContainer" class="px-6 pt-5 pb-1 hidden">
-                            <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-4">
+                        <!-- Internet Sources & Provenance Drawer -->
+                        <div id="sourcesContainer" class="px-6 pt-5 pb-2 hidden">
+                            <div class="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4">
                                 <div class="flex justify-between items-center mb-3">
-                                    <h3 class="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-2">
-                                        <i class="fas fa-globe text-primary"></i> Internet Sources & External References (<span id="sourceCount">0</span>)
+                                    <h3 class="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+                                        <i class="fas fa-globe text-indigo-400"></i> Evidence Provenance & References (<span id="sourceCount">0</span>)
                                     </h3>
-                                    <span class="text-[11px] text-blue-800 bg-blue-100/80 px-2.5 py-0.5 rounded-full font-medium">Live Search Provenance</span>
+                                    <span class="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">Federated Index</span>
                                 </div>
-                                <div id="sourcesList" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto pr-1">
-                                    <!-- Sources injected via JS -->
+                                <div id="sourcesList" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-52 overflow-y-auto pr-1">
+                                    <!-- Injected via JS -->
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Claims Breakdown -->
+                        <!-- Claims & Multi-Agent Debate Arena -->
                         <div class="p-6">
                             <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-sm font-semibold text-gray-800 uppercase tracking-wider flex items-center gap-2">
-                                    <i class="fas fa-scale-balanced text-primary"></i> Claims, Supportive & Opposing Evidence
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                    <i class="fas fa-gavel text-indigo-400"></i> Adversarial Debate Arena (Defender vs Prosecutor)
                                 </h3>
-                                <div class="flex gap-3 text-xs text-gray-500 font-medium">
-                                    <span class="flex items-center gap-1"><i class="fas fa-circle-check text-green-600"></i> Supportive Passages</span>
-                                    <span class="flex items-center gap-1"><i class="fas fa-circle-xmark text-red-600"></i> Opposing Passages</span>
+                                <div class="flex gap-4 text-[11px] font-mono text-slate-400">
+                                    <span class="flex items-center gap-1.5"><i class="fas fa-circle-check text-emerald-400"></i> Defender Support</span>
+                                    <span class="flex items-center gap-1.5"><i class="fas fa-circle-xmark text-rose-400"></i> Prosecutor Refute</span>
                                 </div>
                             </div>
+                            
                             <div id="claimsList" class="flex flex-col gap-5">
                                 <!-- Claims injected via JS -->
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
 
         </div>
     </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-[#0B0F19] py-4 text-center text-xs text-slate-500 font-mono">
+        Multi-Agent Hallucination Verification Engine · Zero-Cost Local DeBERTa-v3 & Federated Consensus
+    </footer>
 
     <script src="/static/app.js"></script>
 </body>

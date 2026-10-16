@@ -161,7 +161,12 @@ class EvidencePollutionDetector:
             source_url = getattr(item, "source_url", None)
             domain = getattr(item, "domain", None)
 
-        if doc_id is None or not isinstance(doc_id, str) or not doc_id.strip():
+        if doc_id is None:
+            raise EvidencePollutionInputError(
+                f"Evidence item missing valid string document_id: {item!r}"
+            )
+        doc_id = str(doc_id).strip()
+        if not doc_id:
             raise EvidencePollutionInputError(
                 f"Evidence item missing valid string document_id: {item!r}"
             )
@@ -171,7 +176,7 @@ class EvidencePollutionDetector:
             )
 
         return (
-            doc_id.strip(),
+            doc_id,
             text,
             str(source) if source is not None else None,
             str(source_url) if source_url is not None else None,

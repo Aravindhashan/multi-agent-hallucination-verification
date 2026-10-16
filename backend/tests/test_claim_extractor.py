@@ -776,3 +776,55 @@ def test_all_subsystem_imports_backward_compatibility():
         ctypes.pythonapi.PyErr_Clear()
         imported = __import__(mod, fromlist=["*"])
         assert imported is not None
+
+
+# ---------------------------------------------------------------------------
+# Pillar 1: Syntactic Sentence Stitching via Universal Grammar Heuristics
+# ---------------------------------------------------------------------------
+
+def test_pillar1_syntactic_stitching_medicine():
+    """Verify bullet headers and verbless fragments in medical texts are stitched cleanly."""
+    extractor = NLPClaimExtractor()
+    text = "Nateglinide. Used for type 2 diabetes."
+    claims = extractor.extract_claims(text)
+    assert len(claims) == 1
+    assert "Nateglinide is used for type 2 diabetes" in claims[0]
+
+    text2 = "* Metformin.\n* First-line medication for type 2 diabetes."
+    claims2 = extractor.extract_claims(text2)
+    assert len(claims2) == 1
+    assert "Metformin is first-line medication for type 2 diabetes" in claims2[0]
+
+    text3 = "Nateglinide. Monotherapy or in combination with metformin to improve glycemic control."
+    claims3 = extractor.extract_claims(text3)
+    assert len(claims3) == 1
+    assert "Nateglinide is monotherapy or in combination with metformin to improve glycemic control" in claims3[0]
+
+
+def test_pillar1_syntactic_stitching_software_history_geography():
+    """Verify open-domain list headers are stitched cleanly across history, geography, and software."""
+    extractor = NLPClaimExtractor()
+    # History
+    text_hist = "* Napoleon Bonaparte.\n* Born in Corsica in 1769."
+    claims_hist = extractor.extract_claims(text_hist)
+    assert len(claims_hist) == 1
+    assert "Napoleon Bonaparte was born in Corsica in 1769" in claims_hist[0]
+
+    # Geography
+    text_geo = "* Mount Everest.\n* The highest mountain on Earth."
+    claims_geo = extractor.extract_claims(text_geo)
+    assert len(claims_geo) == 1
+    assert "Mount Everest is the highest mountain on Earth" in claims_geo[0]
+
+    # Software / CS
+    text_cs = "* FastAPI.\n* Runs on Python 3.8+."
+    claims_cs = extractor.extract_claims(text_cs)
+    assert len(claims_cs) == 1
+    assert "FastAPI runs on Python 3.8+" in claims_cs[0]
+
+    # Python author
+    text_py = "* Python.\n* Created by Guido van Rossum in 1991."
+    claims_py = extractor.extract_claims(text_py)
+    assert len(claims_py) == 1
+    assert "Python was created by Guido van Rossum in 1991" in claims_py[0]
+

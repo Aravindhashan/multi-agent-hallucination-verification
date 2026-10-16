@@ -1439,6 +1439,10 @@ class ClaimVerificationSummary(BaseModel):
         default_factory=list,
         description="Raw premise text, token lengths, and 3-class probabilities sent to DeBERTa.",
     )
+    consensus_confirmed: bool = Field(
+        default=False,
+        description="True if adversarial prosecutor search returned 0 credible contradictions, confirming scientific consensus.",
+    )
 
 
 class VerificationRequest(BaseModel):
@@ -1482,6 +1486,10 @@ class VerificationResponse(BaseModel):
     text: str = Field(description="The source text or statement verified.")
     overall_verdict: ResponseVerdict = Field(
         description="Calibrated response-level rollup verdict: SUPPORTED, PARTIALLY_SUPPORTED, REFUTED, or NOT_ENOUGH_INFO.",
+    )
+    verdict_category: str | None = Field(
+        default=None,
+        description="Fine-grained epistemic verdict category: 'SUPPORTED', 'PARTIALLY_VERIFIED_COVERAGE_GAP', 'PARTIALLY_SUPPORTED_CONTRADICTED', 'REFUTED', or 'NOT_ENOUGH_INFO'.",
     )
     hallucination_index: float = Field(
         ge=0.0,

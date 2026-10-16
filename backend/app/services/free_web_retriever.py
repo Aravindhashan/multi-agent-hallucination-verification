@@ -178,8 +178,8 @@ class FreeWebRetriever(BaseEvidenceRetriever):
             self.DUCKDUCKGO_URL,
             data={"q": normalized_q},
             headers=headers,
-            max_retries=0,
-            timeout=2.5,
+            max_retries=1,
+            timeout=self.timeout,
         )
         if resp is None:
             return []
@@ -230,6 +230,24 @@ class FreeWebRetriever(BaseEvidenceRetriever):
 
         return items
 
+    @staticmethod
+    def _condense_to_keywords(text: str, max_words: int = 6) -> str:
+        """Extract high-information search keywords from a conversational claim or statement."""
+        from app.services.evidence_pollution_config import DEFAULT_STOPWORDS
+
+        tokens = [
+            w for w in re.findall(r"\b[a-zA-Z0-9_\-]+\b", text)
+            if w.lower() not in DEFAULT_STOPWORDS
+            and len(w) >= 2
+            and w.lower() not in ("controversy", "dispute", "refuted", "debunked", "false", "true")
+        ]
+        if not tokens:
+            return text
+        special = [w for w in tokens if any(c.isdigit() for c in w) or w.isupper()]
+        others = [w for w in tokens if w not in special]
+        ordered = special + others
+        return " ".join(ordered[:max_words])
+
     def search_wikipedia(
         self,
         query: str,
@@ -241,10 +259,6 @@ class FreeWebRetriever(BaseEvidenceRetriever):
         if not normalized_q:
             return []
 
-        headers = {
-            "User-Agent": settings.WIKIPEDIA_USER_AGENT,
-            "Accept": "application/json",
-        }
         headers = {
             "User-Agent": settings.WIKIPEDIA_USER_AGENT,
             "Accept": "application/json",
@@ -361,7 +375,76 @@ class FreeWebRetriever(BaseEvidenceRetriever):
                     )
                 )
 
+        # 3. If still no items, retry with condensed keyword query
+        if not items:
+            condensed = self._condense_to_keywords(normalized_q)
+            if condensed and condensed != normalized_q:
+                params_condensed = dict(params)
+                params_condensed["gsrsearch"] = condensed
+                resp_condensed = self._request_with_retry(
+                    "GET",
+                    self.WIKIPEDIA_API_URL,
+                    params=params_condensed,
+                    headers=headers,
+                )
+                if resp_condensed is not None:
+                    try:
+                        data_c = resp_condensed.json()
+                        pages_c = data_c.get("query", {}).get("pages", {})
+                        if pages_c and isinstance(pages_c, dict):
+                            sorted_pages_c = sorted(
+                                pages_c.values(),
+                                key=lambda p: (p.get("index", 999), p.get("pageid", 0)),
+                            )
+                            for rank, p in enumerate(sorted_pages_c[:limit]):
+                                title = p.get("title", "").strip()
+                                extract_text = p.get("extract", "").strip()
+                                if not title and not extract_text:
+                                    continue
+                                page_url = f"https://en.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}"
+                                combined_text = (
+                                    f"{title}: {extract_text}"
+                                    if extract_text and not extract_text.startswith(title)
+                                    else (extract_text or title)
+                                )
+                                relevance = max(0.50, round(0.92 - (rank * 0.05), 3))
+                                items.append(
+                                    EvidenceItem(
+                                        evidence_id=uuid4(),
+                                        text=combined_text,
+                                        source_url=page_url,
+                                        domain="en.wikipedia.org",
+                                        source_title=f"Wikipedia: {title}",
+                                        retrieval_method="free_web_wikipedia",
+                                        relevance_score=relevance,
+                                    )
+                                )
+                    except Exception as exc:
+                        logger.warning("Failed to decode condensed Wikipedia JSON: %s", exc)
+
         return items
+
+    @classmethod
+    def strip_meta_instructions(cls, query: str) -> str:
+        """Strip internal verification plan, anchor labels, and debate boilerplate from search queries."""
+        # Strip "plan: ..."
+        cleaned = re.sub(r"\bplan:\s*[^;\n]+(?:;[^;\n]+)*", "", query, flags=re.IGNORECASE)
+        # Strip label prefixes like "with dates:", "verify quantity numbers:", "locations:", "dates:", "numbers:"
+        cleaned = re.sub(
+            r"\b(?:with dates|verify quantity numbers|locations|dates|numbers):\s*",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        # Strip debate refinement filler
+        cleaned = re.sub(
+            r"\b(?:corroboration confirmation official archive|alternative findings discrepancy errata|counter-evidence)\b:?",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        cleaned = " ".join(cleaned.split()).strip()
+        return cleaned if cleaned else query.strip()
 
     def search(
         self,
@@ -369,7 +452,7 @@ class FreeWebRetriever(BaseEvidenceRetriever):
         max_results: int | None = None,
     ) -> list[EvidenceItem]:
         """Unified search with persistent caching and transparent DuckDuckGo -> Wikipedia fallback."""
-        normalized_q = query.strip()
+        normalized_q = self.strip_meta_instructions(query)
         if not normalized_q:
             return []
 

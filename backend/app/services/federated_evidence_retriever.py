@@ -33,6 +33,26 @@ _BIOMEDICAL_KEYWORDS: frozenset[str] = frozenset(
     ]
 )
 _TOKEN_PATTERN = re.compile(r"\b\w+\b")
+_ENGLISH_STOPWORDS: frozenset[str] = frozenset(
+    [
+        "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "aren't",
+        "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by",
+        "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing", "don't",
+        "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have",
+        "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself",
+        "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into",
+        "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my",
+        "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our",
+        "ours", "ourselves", "out", "over", "own", "same", "shan't", "she", "she'd", "she'll", "she's",
+        "should", "shouldn't", "so", "some", "such", "than", "that", "that's", "the", "their", "theirs",
+        "them", "themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're",
+        "they've", "this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "wasn't",
+        "we", "we'd", "we'll", "we're", "we've", "were", "weren't", "what", "what's", "when", "when's",
+        "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's", "with", "won't",
+        "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself",
+        "yourselves", "plan", "dates", "numbers", "locations", "verify",
+    ]
+)
 
 
 class FederatedEvidenceRetriever(BaseEvidenceRetriever):
@@ -140,6 +160,10 @@ class FederatedEvidenceRetriever(BaseEvidenceRetriever):
         raw_results = retriever.retrieve(query=query, top_k=top_k)
         items: list[EvidenceItem] = []
         query_tokens = set(_TOKEN_PATTERN.findall(query.lower()))
+        meaningful_query_tokens = {
+            t for t in query_tokens
+            if t not in _ENGLISH_STOPWORDS and len(t) >= 2
+        }
 
         for rank_idx, r in enumerate(raw_results, start=1):
             doc_tokens = set(_TOKEN_PATTERN.findall(f"{r.title} {r.text}".lower()))
@@ -147,11 +171,20 @@ class FederatedEvidenceRetriever(BaseEvidenceRetriever):
             if r.score <= 0.0 and overlap == 0:
                 continue
 
+            content_overlap = (
+                len(meaningful_query_tokens.intersection(doc_tokens)) / max(1, len(meaningful_query_tokens))
+                if meaningful_query_tokens
+                else (overlap / max(1, len(query_tokens)))
+            )
+
             # Monotonic saturation normalization or rank-based fallback for zero-IDF small corpora
             if r.score > 0.0:
-                relevance = round(r.score / (r.score + 10.0), 3)
+                base_rel = r.score / (r.score + 10.0)
+                relevance = round(max(0.20, min(1.0, 0.5 * base_rel + 0.5 * content_overlap)), 3)
             else:
-                relevance = max(0.50, round(0.90 - (rank_idx * 0.05), 3))
+                if content_overlap < 0.25:
+                    continue
+                relevance = round(min(0.90, 0.40 + 0.50 * content_overlap), 3)
 
             items.append(
                 EvidenceItem(
@@ -169,7 +202,7 @@ class FederatedEvidenceRetriever(BaseEvidenceRetriever):
 
     def retrieve(self, claim_text: str, stance: str = "supporting") -> list[EvidenceItem]:
         """Retrieve stance-aware evidence according to the configured federation mode."""
-        normalized_claim = claim_text.strip()
+        normalized_claim = FreeWebRetriever.strip_meta_instructions(claim_text.strip())
         if not normalized_claim:
             return []
 
@@ -230,20 +263,36 @@ class FederatedEvidenceRetriever(BaseEvidenceRetriever):
             candidates = self._retrieve_from_bm25(primary_bm25, query, corpus_tag, self.top_k)
 
         # Step B: Escalation Evaluation
-        # If the claim contains specific named entities, acronyms, or alphanumeric identifiers
-        # (e.g. 'PCSK9', 'BRCA1', 'COVID-19', 'H1N1'), verify that candidate documents actually mention them.
+        # If the claim contains specific named entities, proper nouns, acronyms, or alphanumeric identifiers,
+        # verify that candidate documents actually ground them before accepting benchmark.
         claim_words = _TOKEN_PATTERN.findall(normalized_claim)
         entity_tokens = {
             w.lower() for w in claim_words
-            if (any(c.isdigit() for c in w) or (w.isupper() and len(w) >= 2))
+            if any(c.isupper() for c in w) or any(c.isdigit() for c in w)
+        }
+        content_tokens = {
+            w.lower() for w in claim_words
+            if w.lower() not in _ENGLISH_STOPWORDS and len(w) >= 3
         }
         candidates_text = " ".join(c.text.lower() for c in candidates)
-        entities_grounded = (not entity_tokens) or all(e in candidates_text for e in entity_tokens)
+        candidates_tokens = set(_TOKEN_PATTERN.findall(candidates_text))
 
-        # If candidates satisfy threshold AND ground all distinct entities, accept benchmark
+        entities_grounded = (not entity_tokens) or (
+            all(e in candidates_tokens for e in entity_tokens)
+            if len(entity_tokens) <= 2
+            else (len([e for e in entity_tokens if e in candidates_tokens]) / len(entity_tokens) >= 0.70)
+        )
+        content_overlap = (
+            len(content_tokens.intersection(candidates_tokens)) / max(1, len(content_tokens))
+            if content_tokens
+            else 1.0
+        )
+
+        # If candidates satisfy threshold AND ground all distinct entities and content tokens, accept benchmark
         has_confident_evidence = bool(
             candidates
             and entities_grounded
+            and content_overlap >= 0.35
             and any(c.relevance_score >= self.escalation_threshold for c in candidates)
         )
 

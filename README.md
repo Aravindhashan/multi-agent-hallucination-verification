@@ -1,252 +1,241 @@
-# Hallucination Verifier
+# Hallucination Verifier · Multi-Agent Debate Engine
 
-A modular, adversarial multi-agent FastAPI backend for explainable hallucination detection and verification in Large Language Models (LLMs).
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
+[![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11-3776AB.svg?style=flat&logo=python)](https://python.org)
+[![HuggingFace](https://img.shields.io/badge/Model-DeBERTa--v3--base--NLI-yellow.svg?style=flat&logo=huggingface)](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli)
+[![OpenDesign](https://img.shields.io/badge/UI-OpenDesign%20Obsidian-6366F1.svg?style=flat)](https://github.com/Aravindhashan/multi-agent-hallucination-verification)
+[![Tests](https://img.shields.io/badge/Tests-715%20Passed-10B981.svg?style=flat)](https://github.com/Aravindhashan/multi-agent-hallucination-verification)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-The system decomposes LLM responses into independently verifiable atomic claims, retrieves supporting and contradicting evidence using a hybrid search engine (BM25 + FAISS Dense), validates evidence quality and independence, and conducts an adversarial debate between Defender and Prosecutor agents.
-
----
-
-## Pipeline Architecture & Implemented Modules
-
-### 1. Module 1: User Query & Input
-- **Endpoint**: `POST /api/v1/query`
-- Accepts JSON query input with length validation (1–1000 characters).
-- Normalizes whitespace, rejects empty or whitespace-only inputs with HTTP 422.
-- Generates a UUID4 `query_id` and timezone-aware UTC timestamp.
-
-### 2. Module 2: Base LLM Response Generation
-- **Endpoint**: `POST /api/v1/generate`
-- Interfaces with LLM providers behind an abstract `BaseLLMClient` interface.
-- Provides `RealLLMClient` (OpenAI-compatible) and deterministic `MockLLMClient` (`mock-llm-v0`).
-- Stores response provenance, model metadata, and generation timestamps.
-
-### 3. Module 3: Atomic Claim Decomposition & Quality Assessment
-- **Endpoint**: `POST /api/v1/extract-claims`
-- **Primary Engine**: **Deterministic Rule-Based NLP Pipeline** (`NLPClaimExtractor`):
-  - **Sentence Segmentation**: Accurately handles sentences while protecting decimals (`3.14`, `299,792,458.0`) and abbreviations (`Dr.`, `U.S.`, `Prof.`, `Jan.`, `etc.`).
-  - **Coordinate & Compound Clause Splitting**: Splits complex coordinate clauses across conjunctions (`and`, `but`, `while`, `;`) and propagates inherited subjects.
-  - **Recursive Multi-Fact Appositive Splitting**: Decomposes multi-fact participial and appositive structures (such as date attribution, builder attribution, positional predicates, and location) into atomic claims.
-  - **Precision Spatial Anchor Filtering**: Validates geographic entities with exclusion filters preventing false positives from organizations, temporal quarters/days, documents, and historical events.
-  - **Anchor Field Synchronization**: Bidirectionally synchronizes plural anchor lists (`temporal_anchors`, `spatial_anchors`, `numerical_values`) with legacy scalar fields (`temporal_anchor`, etc.) ensuring `scalar == plural[0]`.
-  - **Coreference Resolution**: Resolves third-person pronouns (`he`, `she`, `it`, `they`) against salient antecedent entities.
-  - **Performance & Efficiency**: Operates in <2ms per sentence with zero token cost and low RAM footprint using a transparent deterministic rule-based NLP pipeline (compiled regex vocabularies in `verbs.py` / `lexical.py` and linguistic clause segmenters rather than heavy external dependency parsers like spaCy).
-- **Secondary / Ablation Engine**: `LLMClaimExtractor` using prompt-based decomposition for benchmark comparisons.
-- **Quality Evaluator**: `DecompositionQualityEvaluator` computing empirical coverage, atomicity, entailment, and high-quality claim rate.
-
-### 4. Module 4: Claim Complexity Analysis & Verification Planning
-- **Endpoint**: `POST /api/v1/analyze-claim`
-- Evaluates claim complexity score ($0.0 \le C \le 1.0$) using lexical heuristics, entity density, numerical anchors, and absolute/superlative qualifiers.
-- Automatically constructs an ordered multi-step verification plan and flags whether deep verification is required.
-
-### 5. Evidence Quality, Freshness & Pollution Defense Suite
-- **Endpoint**: `POST /api/v1/evidence/evaluate-quality`
-- **Source Credibility & Domain Authority** (Step 4.1): Tier-based domain scoring (Tier 1 Gov/Edu 1.0, Tier 2 Academic/Scientific 0.85, Tier 3 Established News 0.70, Tier 4 General Web 0.50, Tier 5 Low Credibility 0.20).
-- **Temporal Freshness & Age Decay** (Step 4.2): Half-life exponential decay scoring modeling claim publication vs. evidence age.
-- **Source Independence & Redundancy Clustering** (Step 4.3): Complete-linkage Jaccard distance clustering detecting cross-source syndication and circular reporting.
-- **Evidence Pollution & Circularity Defense** (Step 4.4): Directional lexical grounding rejecting ungrounded or self-referential passages.
-- **Kish Effective Sample Size**: Calculates $n_{\text{eff}}$ over clustered evidence items.
-
-### 6. Retrieval Engine & Stance Differentiation
-- **`HybridRetriever`**: Merges BM25 lexical ranking (`rank_bm25`) with FAISS Dense semantic search (`all-MiniLM-L6-v2`) via reciprocal rank fusion and score preservation.
-- **Memory-Safe Architecture**: Employs lazy loading for heavy neural and vector components to prevent out-of-memory errors on resource-constrained systems.
-- **Stance Adaptation**:
-  - `supporting`: Direct factual retrieval.
-  - `contradicting`: Augments query with controversy, refutation, and criticism keywords (`controversy criticism contradiction disputed false refuted`).
-
-### 7. Module 5 & Module 6: Defender & Prosecutor Agents
-- **Defender Agent** (`POST /api/v1/defend-claim`): Retrieves supporting evidence using `HybridRetriever` (or mock fallback) with `supporting` stance.
-- **Prosecutor Agent** (`POST /api/v1/prosecute-claim`): Retrieves counter-evidence using `HybridRetriever` with `contradicting` stance.
-- Dependency injection wired cleanly via FastAPI `Depends(get_evidence_retriever)` allowing mock overrides in testing.
-
-### 8. Module 7: Federated Multi-Turn Evidentiary Debate
-- **Endpoint**: `POST /api/v1/debate`
-- Dynamic multi-round adversarial debate between Defender and Prosecutor.
-- **Federated Evidence Engine**: Queries local curated benchmarks (PubMed/SciFact BM25, FEVER) and escalates to live web retrieval (DuckDuckGo + Wikipedia full plain-text lead paragraphs) when local evidence falls below the escalation confidence threshold.
-- Persistent SQLite web caching (`backend/data/web_cache.db`) eliminates redundant network requests with zero API subscription cost ($0.00).
-
-### 9. Module 8: Evidence Quality Firewall & Cluster Representative Pooling
-- Deduplicates and clusters evidence via complete-linkage Jaccard similarity.
-- Computes Kish Effective Sample Size ($n_{\text{eff}}$) to guard against cross-source syndication and redundant copies.
-- Identifies winning cluster representatives ($e_k^*$) to eliminate duplicate downstream inference calls.
-
-### 10. Module 9: Cross-Encoder NLI Engine & Sentence-Window Adjudication
-- **Endpoint**: `POST /api/v1/adjudicate-claim`
-- DeBERTa-v3 cross-encoder (`MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli`) evaluates premise-hypothesis entailment, contradiction, and neutral classification.
-- **Claim-Aware Sentence Windowing** (`select_best_sentence_window`): Dynamically extracts the most relevant 1–3 sentence window from evidence passages, avoiding raw snippet truncation and speeding up CPU inference.
-
-### 11. Module 10 & 11: Master End-to-End Verification Pipeline & Decoupled Metrics
-- **Endpoint**: `POST /api/v1/verify`
-- Master pipeline executing decomposition, complexity planning, federated debate, quality firewalling, NLI cross-encoder adjudication, and Bayesian rollup.
-- **Decoupled H-Index Formulation**:
-  - **Factual Hallucination Index ($H_{\text{refuted}}$)**: Calibrated risk of verified factual falsehoods:
-    $$H_{\text{refuted}} = \frac{1}{|C|} \sum_{c \in C_{\text{refuted}}} \max(0.75, \text{confidence}_c)$$
-  - **Epistemic Coverage Gap ($U_{\text{unverified}}$)**: Tracks ungrounded or neutral claims without mislabeling them as hallucinations:
-    $$U_{\text{unverified}} = \frac{1}{|C|} \sum_{c \in C_{\text{unverified}}} \max(0.50, P_{\text{neutral}, c})$$
-  - Ensures corpus-agnostic calibration across PubMed, Wikipedia, and live search.
-
-### 12. Module 12: Interactive Web UI Dashboard
-- Built-in lightweight web interface served at `http://127.0.0.1:8000/`.
-- Features real-time verification status, dual-metric badge cards (Hallucination Index & Coverage Gap), live debate stream, and full evidence provenance viewer.
-
-### 13. Session State Management
-- In-memory thread-safe `SessionStore` backed by SQLite tracking multi-turn queries, claims, retrieved evidence, and quality audit logs.
-
-### 14. Centralized Configuration
-- Centralized thresholds, word limits, domain tiers, and weights in `app/config.py`.
+An explainable, production-ready, adversarial multi-agent verification pipeline that detects, isolates, and calibrates factual hallucinations in Large Language Model (LLM) responses with **zero API cost** ($0.00).
 
 ---
 
-## Requirements
+## 🌟 Key Highlights
 
-- Python 3.10 or newer
-- Dependencies listed in `backend/requirements.txt`
+- **Adversarial Dual-Agent Debate**: Pits an evidentiary **Defender** (confirming hypothesis) against a relentless **Prosecutor** (adversarial counter-hypothesis generator) to eliminate confirmation bias.
+- **Scientific Consensus Confirmation**: When a claim is true, the prosecutor conducts an exhaustive adversarial web probe; finding zero refutations triggers an explicit scientific consensus verdict.
+- **Syntactic Universal Grammar Heuristics**: Automatically detects unanchored antecedent subjects in lists, titles, and bullet points without terminal punctuation, universally stitching them into verifiable atomic propositions across medicine, history, and software.
+- **Evidence Quality Firewall**: Decontaminates retrieved evidence using **Kish Effective Sample Size ($n_{\text{eff}}$)**, domain authority tiers, half-life temporal freshness decay, and directional lexical grounding to defend against circular reporting and evidence pollution.
+- **DeBERTa-v3 Cross-Encoder Adjudication**: Computes calibrated token-level natural language inference ($p_{\text{entailment}}$, $p_{\text{contradiction}}$, $p_{\text{neutral}}$) with dynamic sentence-window pooling.
+- **Decoupled Hallucination Index**: Decouples factual refutation ($H$) from epistemic coverage gaps ($U$), preventing ungrounded yet plausible claims from being falsely labeled as hallucinations.
+- **OpenDesign Obsidian UI**: Brand-grade dark mode dashboard featuring glassmorphic telemetry, real-time stopwatch, live provenance links, and interactive multi-agent debate cards.
 
 ---
 
-## Run the Backend
+## 🏗️ Architecture
+
+```mermaid
+flowchart TD
+    A["Raw LLM Response / Text Passage"] --> B["NLPClaimExtractor\n(Universal Grammar Heuristics & Antecedent Buffer)"]
+    B --> C["Atomic Claims C = {c₁, c₂, ..., cₙ}"]
+    C --> D["ClaimComplexityAnalyzer\n(Entity Density & Verification Planning)"]
+    
+    subgraph MultiAgentDebate ["Federated Multi-Agent Debate Arena"]
+        D --> E1["Defender Agent\n(Corroborating Retrieval)"]
+        D --> E2["Prosecutor Agent\n(Adversarial Counter-Hypothesis Probe)"]
+        E1 <--> F["Federated Retriever\n(Local PubMed BM25 + DuckDuckGo + Wikipedia)"]
+        E2 <--> F
+    end
+
+    subgraph QualityFirewall ["Evidence Quality Firewall"]
+        E1 --> G["Evidence Quality & Pollution Defense"]
+        E2 --> G
+        G --> G1["Kish Effective Sample Size (n_eff)"]
+        G --> G2["Domain Authority Tiers (Gov/Edu/Sci)"]
+        G --> G3["Temporal Freshness Decay"]
+        G --> G4["Directional Lexical Grounding"]
+    end
+
+    G1 & G2 & G3 & G4 --> H["DeBERTa-v3 Cross-Encoder\n(Sentence-Window NLI Pooling)"]
+    
+    subgraph Adjudication ["Adjudication & Calibration Engine"]
+        H --> I["Bayesian Adjudication\n(P(Entailment) vs P(Contradiction))"]
+        I --> J1["Global H-Index (Refuted Rate)"]
+        I --> J2["Epistemic Coverage Gap (U-Index)"]
+        I --> J3["Scientific Consensus Classifier"]
+    end
+
+    J1 & J2 & J3 --> K["OpenDesign Dashboard & REST API Output"]
+```
+
+---
+
+## 📐 Mathematical Formulation
+
+### 1. Factual Hallucination Index ($H_{\text{refuted}}$)
+Measures the calibrated proportion of claims demonstrably contradicted by authoritative external evidence:
+
+$$H_{\text{refuted}} = \frac{1}{|C|} \sum_{c \in C_{\text{refuted}}} \max(0.75, \, \text{confidence}_c)$$
+
+### 2. Epistemic Coverage Gap ($U_{\text{unverified}}$)
+Measures claims for which external corroboration or refutation could not be conclusively found, preventing neutral gaps from skewing factual hallucination metrics:
+
+$$U_{\text{unverified}} = \frac{1}{|C|} \sum_{c \in C_{\text{unverified}}} \max(0.50, \, P_{\text{neutral}, c})$$
+
+### 3. Kish Effective Sample Size ($n_{\text{eff}}$)
+Guards against source syndication and circular reporting across search engines:
+
+$$n_{\text{eff}} = \frac{\left(\sum_{k=1}^K w_k\right)^2}{\sum_{k=1}^K w_k^2}$$
+
+---
+
+## 🚀 Quickstart
+
+### Prerequisites
+- Python 3.10 or 3.11
+- Git
+
+### 1. Clone & Setup Environment
+
+```bash
+git clone https://github.com/Aravindhashan/multi-agent-hallucination-verification.git
+cd multi-agent-hallucination-verification/backend
+python -m venv .venv
+
+# On Linux / macOS:
+source .venv/bin/activate
+
+# On Windows PowerShell:
+.venv\Scripts\Activate.ps1
+
+pip install -r requirements.txt
+```
+
+### 2. Launch the Application
+
+```bash
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+- **OpenDesign Web Console**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Interactive OpenAPI Documentation**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+---
+
+## 💻 OpenDesign Dashboard
+
+The system features an OpenDesign-compliant, obsidian-themed UI equipped with:
+- **Hero Verification Console**: Paste text or select sample presets (Cardio Fact, Refuted Myth, PCSK9 Genetics, Unanchored Lists).
+- **KPI Telemetry Cards**: Real-time Global $H$-Index, Overall Verdict, Aggregated Confidence, Evaluated Evidences, and Latency stopwatch.
+- **Evidence Provenance Drawer**: Live external links to source documents with domain authority badges.
+- **Dual-Perspective Debate Arena**: Side-by-side view comparing **Defender Corroboration** with DeBERTa NLI distributions ($p_E, p_N, p_C$) against **Prosecutor Counter-Evidence** or **Scientific Consensus** notices.
+
+---
+
+## 📡 Core API Reference
+
+### Full End-to-End Verification
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/verify" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Aspirin reduces cardiovascular mortality and lowers the risk of myocardial infarction.",
+    "evidence_mode": "hybrid",
+    "max_debate_rounds": 1
+  }'
+```
+
+#### Sample Response:
+```json
+{
+  "query_id": "8d3e9114-6b94-4b5c-bfa8-21d45e032542",
+  "overall_verdict": "SUPPORTED",
+  "hallucination_index": 0.0,
+  "unverified_index": 0.0,
+  "confidence_score": 0.98,
+  "supported_count": 1,
+  "refuted_count": 0,
+  "unverified_count": 0,
+  "claims": [
+    {
+      "claim_id": "claim_0",
+      "claim_text": "Aspirin reduces cardiovascular mortality and lowers the risk of myocardial infarction.",
+      "verdict": "SUPPORTED",
+      "confidence_score": 0.98,
+      "consensus_confirmed": true,
+      "supportive_claims": [
+        {
+          "text": "Aspirin substantially reduces overall mortality and recurrent infarction in cardiovascular patients.",
+          "confidence": 0.98,
+          "source_url": "https://pubmed.ncbi.nlm.nih.gov/...",
+          "domain": "pubmed.ncbi.nlm.nih.gov",
+          "p_entailment": 0.98,
+          "p_neutral": 0.01,
+          "p_contradiction": 0.01
+        }
+      ],
+      "opposing_claims": []
+    }
+  ],
+  "internet_sources": [
+    {
+      "title": "Aspirin in Cardiovascular Disease Prevention",
+      "domain": "ncbi.nlm.nih.gov",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/..."
+    }
+  ]
+}
+```
+
+---
+
+## 🧪 Comprehensive Verification Suite
+
+The repository includes a rigorous test suite of **715 automated tests** covering decomposition, multi-agent debate, evidence quality, and cross-encoder calibration:
 
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate  # Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m pytest tests/
 ```
 
-The API will be available at `http://127.0.0.1:8000`. Interactive OpenAPI documentation is available at `http://127.0.0.1:8000/docs`.
+### Test Coverage Highlights:
+- `test_claim_extractor.py`: Sentence segmentation, abbreviations, decimals, coordinate splitting, and universal antecedent stitching.
+- `test_prosecutor.py` & `test_defender.py`: Dynamic adversarial counter-hypothesis query generation and stance retrieval.
+- `test_evidence_pollution.py`: Directional lexical grounding and circularity detection.
+- `test_source_independence.py`: Complete-linkage Jaccard clustering and Kish $n_{\text{eff}}$ sample size calculations.
+- `test_nli_engine.py`: DeBERTa-v3 cross-encoder classification and sentence windowing.
+- `test_adjudication_federated_batch.py`: End-to-end multi-agent verification on PubMed and live web corpora.
 
 ---
 
-## API Examples
-
-### 1. Submit Query
-```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/query" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"Tell me about the Eiffel Tower."}'
-```
-
-### 2. Generate Response
-```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/generate" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"Tell me about the Eiffel Tower."}'
-```
-
-### 3. Extract Atomic Claims (Deterministic NLP Pipeline)
-```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/extract-claims" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "Tell me about the Eiffel Tower.",
-    "response_text": "The Eiffel Tower, built in 1889 by Gustave Eiffel, stands in Paris and is 330 meters tall."
-  }'
-```
-
-### 4. Analyze Claim Complexity & Verification Plan
-```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/analyze-claim" \
-  -H "Content-Type: application/json" \
-  -d '{"claim_text": "The Eiffel Tower was built in 1889 by Gustave Eiffel."}'
-```
-
-### 5. Evaluate Evidence Quality & Independence
-```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/evidence/evaluate-quality" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "claim_text": "The Eiffel Tower was built in 1889 by Gustave Eiffel.",
-    "evidence_items": [
-      {
-        "id": "ev_001",
-        "text": "The Eiffel Tower was constructed in 1889 under the direction of Gustave Eiffel.",
-        "source_url": "https://www.culture.gouv.fr/eiffel-tower",
-        "published_date": "2023-01-15T00:00:00Z"
-      }
-    ]
-  }'
-```
-
-### 6. Defend Claim (Supporting Evidence)
-```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/defend-claim" \
-  -H "Content-Type: application/json" \
-  -d '{"claim_text": "The Eiffel Tower stands in Paris."}'
-```
-
-### 7. Prosecute Claim (Contradicting Evidence)
-```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/prosecute-claim" \
-  -H "Content-Type: application/json" \
-  -d '{"claim_text": "The Eiffel Tower was built in 1950."}'
-```
-
----
-
-## Directory Structure
+## 📂 Repository Structure
 
 ```text
 hallucination_verifier/
 ├── backend/
 │   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py
-│   │   ├── config.py
-│   │   ├── schemas.py
-│   │   ├── dependencies.py
-│   │   ├── routers/
-│   │   │   ├── query.py
-│   │   │   ├── generation.py
-│   │   │   ├── claims.py
-│   │   │   ├── analysis.py
-│   │   │   ├── evidence_quality.py
-│   │   │   ├── defender.py
-│   │   │   └── prosecutor.py
-│   │   ├── services/
-│   │   │   ├── llm_client.py
-│   │   │   ├── real_llm_client.py
-│   │   │   ├── mock_llm_client.py
-│   │   │   ├── llm_service.py
-│   │   │   ├── claim_extractor.py
-│   │   │   ├── nlp_claim_extractor.py
-│   │   │   ├── llm_claim_extractor.py
-│   │   │   ├── claim_models.py
-│   │   │   ├── decomposition_evaluator.py
-│   │   │   ├── self_containment_reviser.py
-│   │   │   ├── claim_analyzer.py
-│   │   │   ├── simple_claim_analyzer.py
-│   │   │   ├── corpus_schema.py
-│   │   │   ├── corpus_loader.py
-│   │   │   ├── retrieval_models.py
-│   │   │   ├── bm25_retriever.py
-│   │   │   ├── dense_retriever.py
-│   │   │   ├── hybrid_retriever.py
-│   │   │   ├── nli_models.py
-│   │   │   ├── nli_config.py
-│   │   │   ├── nli_engine.py
-│   │   │   ├── source_credibility_models.py
-│   │   │   ├── source_credibility_config.py
-│   │   │   ├── source_credibility_scorer.py
-│   │   │   ├── temporal_freshness_models.py
-│   │   │   ├── temporal_freshness_config.py
-│   │   │   ├── temporal_freshness_scorer.py
-│   │   │   ├── source_independence_models.py
-│   │   │   ├── source_independence_config.py
-│   │   │   ├── source_independence_scorer.py
-│   │   │   ├── evidence_pollution_models.py
-│   │   │   ├── evidence_pollution_config.py
-│   │   │   ├── evidence_pollution_detector.py
-│   │   │   ├── evidence_quality_service.py
-│   │   │   ├── session_store.py
-│   │   │   ├── defender_service.py
-│   │   │   ├── prosecutor_service.py
-│   │   │   └── startup_gate.py
-│   │   └── utils/
-│   │       ├── verbs.py
-│   │       └── lexical.py
-│   └── requirements.txt
-├── docs/
-│   ├── PROJECT_KNOWLEDGE_GRAPH.md
-│   └── phases/
+│   │   ├── main.py                      # FastAPI entrypoint & middleware
+│   │   ├── config.py                    # Thresholds, domain tiers & hyperparameters
+│   │   ├── schemas.py                   # Pydantic data schemas & validation
+│   │   ├── routers/                     # REST API routers
+│   │   │   ├── query.py                 # Query lifecycle
+│   │   │   ├── generation.py            # LLM generation interface
+│   │   │   ├── claims.py                # Decomposition endpoints
+│   │   │   ├── analysis.py              # Complexity analysis
+│   │   │   ├── evidence_quality.py      # Quality firewall
+│   │   │   ├── defender.py              # Defender agent
+│   │   │   ├── prosecutor.py            # Prosecutor agent
+│   │   │   └── debate.py                # Multi-agent debate orchestration
+│   │   ├── services/                    # Core business logic & algorithms
+│   │   │   ├── nlp_claim_extractor.py   # Universal grammar heuristics & antecedent buffers
+│   │   │   ├── prosecutor_service.py    # Counter-hypothesis query generation
+│   │   │   ├── federated_evidence_retriever.py # PubMed + DuckDuckGo + Wikipedia
+│   │   │   ├── nli_engine.py            # DeBERTa-v3 cross-encoder adjudication
+│   │   │   ├── evidence_quality_service.py # Kish n_eff, Freshness & Grounding
+│   │   │   └── verification_service.py  # End-to-end master pipeline
+│   │   └── utils/                       # Lexical tables & regex vocabularies
+│   ├── data/                            # Curated corpora & persistent cache
+│   ├── scripts/                         # Selenium browser runners & evaluation scripts
+│   ├── static/                          # OpenDesign Obsidian Frontend (HTML5/Tailwind/ES6)
+│   ├── tests/                           # 715 unit and integration tests
+│   └── requirements.txt                 # Dependencies
+├── .agents/skills/opendesign/           # OpenDesign frontend design skill
 └── README.md
 ```
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

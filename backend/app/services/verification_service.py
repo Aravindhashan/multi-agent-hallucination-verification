@@ -261,25 +261,28 @@ class VerificationService:
             raw_nli_inputs_list: list[dict[str, Any]] = []
 
             for ev in adj_resp.evaluated_evidence:
-                is_support = (ev.stance == "supporting") or (ev.p_entailment > ev.p_contradiction)
-                conf = ev.confidence if ev.confidence is not None else max(ev.p_entailment, ev.p_contradiction)
+                p_c = ev.p_contradiction or 0.0
+                p_e = ev.p_entailment or 0.0
+                is_opposing = (p_c >= 0.40 and p_c > p_e)
+                is_support = not is_opposing and ((ev.stance == "supporting") or (p_e >= 0.40))
+                conf = p_c if is_opposing else p_e
                 snippet_item = EvidenceSnippetSummary(
                     text=ev.text,
                     premise_text=getattr(ev, "premise_text", None) or ev.text,
                     token_length=getattr(ev, "token_length", None),
-                    p_entailment=round(ev.p_entailment, 4) if getattr(ev, "p_entailment", None) is not None else None,
-                    p_neutral=round(ev.p_neutral, 4) if getattr(ev, "p_neutral", None) is not None else None,
-                    p_contradiction=round(ev.p_contradiction, 4) if getattr(ev, "p_contradiction", None) is not None else None,
+                    p_entailment=round(p_e, 4),
+                    p_neutral=round(ev.p_neutral or 0.0, 4),
+                    p_contradiction=round(p_c, 4),
                     source_title=ev.source_title or "Internet Reference",
                     source_url=ev.source_url,
                     domain=ev.domain or "Web Source",
-                    stance="supporting" if is_support else "opposing",
-                    confidence=round(conf, 4) if conf is not None else None,
+                    stance="opposing" if is_opposing else "supporting",
+                    confidence=round(conf, 4) if conf is not None else 0.5,
                 )
-                if is_support:
-                    supportive_claims.append(snippet_item)
-                else:
+                if is_opposing:
                     opposing_claims.append(snippet_item)
+                elif is_support:
+                    supportive_claims.append(snippet_item)
 
                 raw_nli_inputs_list.append({
                     "evidence_id": ev.evidence_id,
@@ -340,6 +343,7 @@ class VerificationService:
                     opposing_claims=opposing_claims,
                     internet_sources=claim_sources,
                     raw_nli_inputs=raw_nli_inputs_list,
+                    consensus_confirmed=(len(opposing_claims) == 0 and adj_resp.verdict == AdjudicationVerdict.SUPPORTED),
                 )
             )
 
@@ -355,18 +359,23 @@ class VerificationService:
             1 for c in claim_summaries if c.verdict == AdjudicationVerdict.NOT_ENOUGH_INFO
         )
 
-        # Response Verdict taxonomy
+        # Response Verdict taxonomy & Granular Epistemic Category
         if refuted_count > 0 and supported_count > 0:
             overall_verdict = ResponseVerdict.PARTIALLY_SUPPORTED
+            verdict_category = "PARTIALLY_SUPPORTED_CONTRADICTED"
         elif refuted_count > 0 and supported_count == 0:
             overall_verdict = ResponseVerdict.REFUTED
+            verdict_category = "REFUTED"
         elif supported_count > 0 and refuted_count == 0:
             if unverified_count > 0:
                 overall_verdict = ResponseVerdict.PARTIALLY_SUPPORTED
+                verdict_category = "PARTIALLY_VERIFIED_COVERAGE_GAP"
             else:
                 overall_verdict = ResponseVerdict.SUPPORTED
+                verdict_category = "SUPPORTED"
         else:
             overall_verdict = ResponseVerdict.NOT_ENOUGH_INFO
+            verdict_category = "NOT_ENOUGH_INFO"
 
         # Decoupled Mathematical Formulation:
         # 1. Factual Hallucination Index H_refuted in [0.0, 1.0]:
@@ -403,6 +412,7 @@ class VerificationService:
         # Step 7: SQLite Session Audit Finalization (Module 11.2)
         summary_dict = {
             "overall_verdict": overall_verdict.value,
+            "verdict_category": verdict_category,
             "hallucination_index": hallucination_index,
             "unverified_index": unverified_index,
             "confidence_score": mean_confidence,
@@ -425,6 +435,11 @@ class VerificationService:
             query_id=resolved_query_id,
             key="overall_verdict",
             value=overall_verdict.value,
+        )
+        self._session_store.update_metadata(
+            query_id=resolved_query_id,
+            key="verdict_category",
+            value=verdict_category,
         )
         self._session_store.update_metadata(
             query_id=resolved_query_id,
@@ -451,6 +466,7 @@ class VerificationService:
             query_id=resolved_query_id,
             text=normalized_text,
             overall_verdict=overall_verdict,
+            verdict_category=verdict_category,
             hallucination_index=hallucination_index,
             unverified_index=unverified_index,
             confidence_score=mean_confidence,

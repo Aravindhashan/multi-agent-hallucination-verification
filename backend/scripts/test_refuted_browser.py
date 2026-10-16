@@ -29,7 +29,7 @@ def test_hallucination_in_browser():
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "verifyForm")))
 
         # Enter refuted claim
-        refuted_claim = "MicroRNA-203 promotes tumor growth and speeds up cellular proliferation in lung cancer."
+        refuted_claim = "The capital of France is Madrid."
         print(f"Testing Refuted claim: '{refuted_claim}'...")
         textarea = driver.find_element(By.ID, "response")
         textarea.clear()

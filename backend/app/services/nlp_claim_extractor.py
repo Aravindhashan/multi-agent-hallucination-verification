@@ -14,6 +14,7 @@ from app.services.decomposition_evaluator import DecompositionQualityEvaluator
 from app.services.self_containment_reviser import AntecedentMemory, SelfContainmentReviser
 from app.utils.lexical import COMMON_ABBREVIATIONS
 from app.utils.verbs import (
+    ALL_VERBS,
     VERB_PHRASE_PATTERNS,
     get_has_verb_pattern,
     get_starts_with_verb_pattern,
@@ -64,6 +65,36 @@ _ROLE_PATTERNS = re.compile(
     r"^(?:the\s+)?(?:former\s+|current\s+|co-)?(?:CEO|CTO|CFO|COO|founder|president|director|chairman|chairwoman|minister|prime\s+minister|secretary|governor|senator|judge|justice|professor|chancellor|author|creator|inventor|architect|lead\s+engineer|chief\s+scientist|head|leader|pioneer|physicist|chemist|biologist|astronomer|mathematician|economist|philosopher|historian)\b",
     re.IGNORECASE,
 )
+
+# Finite verb whitelist and inflection patterns for universal antecedent stitching (Pillar 1)
+_FINITE_VERB_WHITELIST: frozenset[str] = frozenset({
+    "is", "are", "was", "were", "be", "been", "being",
+    "has", "have", "had", "having", "does", "do", "did", "done",
+    "can", "could", "will", "would", "shall", "should", "may", "might", "must", "ought",
+    "became", "become", "becomes", "remains", "remained", "seemed", "seems",
+    "born", "built", "written", "wrote", "began", "begun", "made", "taken", "took", "given", "gave",
+    "seen", "saw", "run", "ran", "held", "won", "lost", "sold", "bought", "brought", "thought", "taught",
+    "caught", "felt", "left", "meant", "kept", "slept", "known", "knew", "grown", "grew", "shown", "flown",
+    "flew", "drawn", "drew", "eaten", "ate", "fallen", "fell", "driven", "drove", "risen", "rose", "spoken",
+    "spoke", "broken", "broke", "chosen", "chose", "frozen", "froze", "stolen", "stole", "forgotten",
+    "forgot", "hidden", "hid", "got", "gotten", "found", "bound", "wound", "ground", "stood", "struck",
+    "spent", "sent", "met", "led", "fed", "read", "shot", "shut", "spread", "split",
+    "inhibits", "reduces", "stimulates", "causes", "binds", "prevents", "treats", "decreases", "increases",
+    "functions", "works", "acts", "serves", "regulates", "secretes", "enhances", "leads", "contains",
+    "consists", "features", "requires", "provides", "lowers", "targets", "expresses", "promotes",
+    "induces", "mediates", "generates", "improves", "alters", "controls", "activates", "blocks",
+})
+
+_FINITE_VERB_PATTERN = re.compile(
+    r"\b(?:" + "|".join(re.escape(v) for v in sorted(_FINITE_VERB_WHITELIST, key=len, reverse=True)) + r")\b",
+    re.IGNORECASE,
+)
+
+_NON_VERB_ED_WORDS: frozenset[str] = frozenset({
+    "red", "bed", "sled", "shed", "speed", "seed", "weed", "bleed", "feed",
+    "need", "creed", "breed", "greed", "deed", "hundred", "naked", "sacred",
+    "wicked", "crooked", "beloved", "rugged", "blessed", "learned", "ragged",
+})
 
 # Spatial / location indicators (generalized beyond hardcoded whitelist)
 _SPATIAL_PREPOSITION_PATTERN = re.compile(
@@ -214,6 +245,7 @@ class NLPClaimExtractor(BaseClaimExtractor):
 
         cleaned_text = self._strip_conversational_boilerplate(response_text)
         sentences = self._segment_sentences(cleaned_text)
+        sentences = self._stitch_unanchored_antecedents(sentences)
 
         raw_claims: list[dict[str, Any]] = []
         salient_entities: dict[str, str | None] = {"subject": None, "object": None}
@@ -307,8 +339,8 @@ class NLPClaimExtractor(BaseClaimExtractor):
             pattern = re.compile(re.escape(abbr), re.IGNORECASE)
             protected = pattern.sub(lambda m: m.group(0).replace(".", "___DOT___"), protected)
 
-        # Split on sentence boundaries (. ! ?) followed by space or end of string
-        raw_sentences = re.split(r"(?<=[.!?])\s+", protected)
+        # Split on sentence boundaries (. ! ?) followed by space, or newlines preceding bullet markers / capitalized words
+        raw_sentences = re.split(r"(?<=[.!?])\s+|\n+(?=[\*\-\•]|\d+[\.\)]|[A-Z])", protected)
 
         sentences: list[str] = []
         for s in raw_sentences:
@@ -318,6 +350,230 @@ class NLPClaimExtractor(BaseClaimExtractor):
                 sentences.append(restored)
 
         return sentences
+
+    def _has_finite_verb(self, text: str) -> bool:
+        """Inspect whether text contains a finite verb, auxiliary, or predicate inflection.
+
+        Pillar 1 Universal Finite Verb Detector:
+        has_finite_verb(s) = exists w in s matching aux, modal, or inflectional verb patterns.
+        """
+        cleaned = text.strip()
+        if not cleaned:
+            return False
+
+        # 1. Copula, auxiliary, aspectual, modal verbs
+        if _FINITE_VERB_PATTERN.search(cleaned):
+            return True
+
+        # 2. General verb lexicon from app.utils.verbs
+        if get_has_verb_pattern().search(cleaned):
+            return True
+
+        # 3. Regular inflectional verb endings: past (-ed) and 3rd person singular (-s/-es)
+        tokens = re.findall(r"\b[a-zA-Z]+(?:'[a-zA-Z]+)?\b", cleaned)
+        for tok in tokens:
+            t_lower = tok.lower()
+            if t_lower in _FINITE_VERB_WHITELIST or t_lower in ALL_VERBS:
+                return True
+            # Check 3rd-person singular present forms against base verb lexicon
+            if len(t_lower) >= 3 and t_lower.endswith("s"):
+                if t_lower[:-1] in ALL_VERBS or (t_lower.endswith("es") and t_lower[:-2] in ALL_VERBS):
+                    return True
+            # Check inflectional past -ed (excluding common non-verb words)
+            if len(t_lower) >= 4 and t_lower.endswith("ed") and t_lower not in _NON_VERB_ED_WORDS:
+                return True
+            # Check common predicate verb endings (-izes, -ises, -ates, -bits, -duces, etc.)
+            if re.search(
+                r"(?:izes|ises|ates|bits|duces|vides|quires|tains|sists|tures|lates|cretes|motes|acts|serves|binds|treats|lowers|helps|leads|works|functions)$",
+                t_lower,
+            ):
+                return True
+
+        return False
+
+    def _starts_with_active_verb(self, text: str) -> bool:
+        """Check if clause begins with an active finite verb (rather than a passive participle)."""
+        first_word_match = re.match(r"^([a-zA-Z]+)\b", text.strip())
+        if not first_word_match:
+            return False
+        first_word = first_word_match.group(1).lower()
+
+        # Auxiliaries/modals that start a predicate
+        if first_word in {
+            "is", "was", "are", "were", "has", "have", "had", "can", "will", "could", "would", "does", "did"
+        }:
+            return True
+
+        # 3rd-person singular present verbs: ends in -s, -es, -ies (excluding nouns/determiners like 'this', 'as', etc.)
+        if len(first_word) >= 3 and first_word.endswith("s") and first_word not in {"this", "as", "his", "yes", "plus", "thus", "minus"}:
+            return True
+
+        # Common base action verbs
+        if first_word in {
+            "run", "runs", "inhibit", "inhibits", "reduce", "reduces", "stimulate", "stimulates",
+            "treat", "treats", "cause", "causes", "bind", "binds", "prevent", "prevents",
+            "work", "works", "act", "acts", "serve", "serves", "contain", "contains",
+            "feature", "features", "require", "requires", "provide", "provides",
+        }:
+            return True
+
+        return False
+
+    def _has_overt_subject_before_verb(self, text: str) -> bool:
+        """Check if clause contains an overt subject preceding a finite verb."""
+        t = text.strip()
+
+        # 1. Strip infinitives "to <verb>" so they do not falsely register as main-clause finite verbs
+        t_no_infinitive = re.sub(r"\bto\s+[a-z]+\b", "___INF___", t, flags=re.IGNORECASE)
+
+        # 2. If the clause has no finite verb at all, it cannot have an overt subject before a verb
+        if not self._has_finite_verb(t_no_infinitive):
+            return False
+
+        first_word_match = re.match(r"^([a-zA-Z]+)\b", t)
+        if not first_word_match:
+            return False
+        first_word = first_word_match.group(1).lower()
+
+        # If the first word is a verb/participle or preposition or conjunction, there is NO overt subject before it
+        if self._has_finite_verb(first_word) or first_word in {
+            "for", "in", "on", "at", "with", "by", "from", "as", "to", "and", "or", "but"
+        }:
+            return False
+
+        # Check if subject split pattern matches a noun phrase preceding a verb
+        subj_split_pat = get_subject_split_pattern()
+        match = subj_split_pat.match(t_no_infinitive)
+        if match:
+            candidate_subj = match.group(1).strip()
+            # If candidate subject ends in a preposition or conjunction, it is not a valid subject noun phrase
+            last_subj_word = candidate_subj.split()[-1].lower() if candidate_subj.split() else ""
+            if last_subj_word in {"to", "with", "for", "in", "on", "of", "by", "from", "at", "as", "and", "or", "but"}:
+                return False
+
+            c_tokens = candidate_subj.split()
+            if len(c_tokens) >= 2 or candidate_subj.lower() in {"the", "a", "an", "this", "that"}:
+                return True
+
+        return False
+
+    def _stitch_clause_with_subject(self, subject: str, clause: str) -> str:
+        """Compose a grammatically complete proposition by binding subject with clause."""
+        c = clause.strip()
+        bullet_match = re.match(r"^([\*\-\•]\s+|\d+[\.\)]\s+)", c)
+        bullet_prefix = bullet_match.group(1) if bullet_match else ""
+        c_body = c[len(bullet_prefix):].strip()
+
+        if not c_body:
+            return f"{subject}."
+
+        # Case 1: Clause already starts with the subject itself
+        if c_body.lower().startswith(subject.lower()):
+            return c_body
+
+        # Case 2: Clause starts with a pronoun ("It is...", "He was...", "It has...", "They are...")
+        pronoun_match = re.match(r"^(?:It|He|She|They)\b\s*", c_body, re.IGNORECASE)
+        if pronoun_match:
+            rest = c_body[pronoun_match.end():]
+            return f"{subject} {rest}".strip()
+
+        # Case 3: Check if clause already has its own complete overt subject before a finite verb
+        if self._has_overt_subject_before_verb(c_body):
+            return c_body
+
+        # Case 4: Clause starts with an active finite verb
+        if self._starts_with_active_verb(c_body):
+            first_word_match = re.match(r"^([a-zA-Z]+)(.*)$", c_body, re.DOTALL)
+            if first_word_match:
+                verb = first_word_match.group(1).lower()
+                rest = first_word_match.group(2)
+                return f"{subject} {verb}{rest}".strip()
+            return f"{subject} {c_body}".strip()
+
+        # Case 5: Participle, adjective, noun complement, or preposition:
+        first_word_match = re.match(r"^([a-zA-Z]+)(.*)$", c_body, re.DOTALL)
+        if first_word_match:
+            word = first_word_match.group(1).lower()
+            rest = first_word_match.group(2)
+            has_past_temporal = bool(re.search(r"\b(?:in|on|at|around|circa|by)\s+(?:1[0-9]{3}|20[0-2][0-9])\b", rest))
+            copula = "was" if (word in {"born", "created", "founded", "built", "discovered", "invented", "released", "established"} and has_past_temporal) else "is"
+            return f"{subject} {copula} {word}{rest}".strip()
+
+        return f"{subject} is {c_body}".strip()
+
+    def _stitch_unanchored_antecedents(self, sentences: list[str]) -> list[str]:
+        """Stitch unanchored antecedent headers/noun phrases to succeeding predicate clauses.
+
+        Pillar 1: Universal Syntactic Sentence Stitching via Grammar Heuristics.
+        When text contains list headers, titles, or entity anchors without a finite verb (token count <= 5),
+        buffer the antecedent subject and prepend it to succeeding dependent clauses:
+        s_{i+1}' = s_i + " is " + s_{i+1} or s_i + " " + s_{i+1}
+        """
+        if not sentences:
+            return []
+
+        stitched: list[str] = []
+        active_subject: str | None = None
+
+        for raw_s in sentences:
+            s = raw_s.strip()
+            if not s:
+                continue
+
+            # Check for inline colon header e.g. "* Nateglinide: Used for type 2 diabetes."
+            colon_match = re.match(r"^([\*\-\•]?\s*[A-Z0-9][a-zA-Z0-9\s\-\']{1,45}):\s+(.+)$", s)
+            if colon_match:
+                header_part = colon_match.group(1).strip()
+                body_part = colon_match.group(2).strip()
+                header_clean = re.sub(r"^[\*\-\•]\s+|\d+[\.\)]\s+", "", header_part).strip().rstrip(":")
+                header_tokens = [t for t in header_clean.split() if t]
+                if not self._has_finite_verb(header_clean) and len(header_tokens) <= 5:
+                    active_subject = header_clean
+                    s = self._stitch_clause_with_subject(active_subject, body_part)
+                    stitched.append(s)
+                    continue
+
+            # Strip leading bullet/list markers for analysis
+            core = re.sub(r"^[\*\-\•]\s+|\d+[\.\)]\s+", "", s).strip()
+            core_clean = core.rstrip(".!?:")
+            tokens = [t for t in re.split(r"\s+", core_clean) if t]
+            has_verb = self._has_finite_verb(core)
+
+            # If we already have an active_subject buffered:
+            if active_subject:
+                # Check whether this segment is a dependent clause / complement of active_subject
+                first_w = core_clean.split()[0].lower() if core_clean.split() else ""
+                is_dependent_or_complement = (
+                    has_verb
+                    or self._starts_with_active_verb(core)
+                    or first_w in {
+                        "the", "a", "an", "this", "that", "in", "on", "at", "for", "with",
+                        "by", "from", "as", "first-line", "second-line", "common", "used", "monotherapy"
+                    }
+                    or len(tokens) > 3
+                )
+                if is_dependent_or_complement:
+                    s_stitched = self._stitch_clause_with_subject(active_subject, s)
+                    stitched.append(s_stitched)
+                    continue
+                else:
+                    # New distinct entity header (e.g. "* Category.\n* Mount Everest.")
+                    active_subject = core_clean
+                    continue
+
+            # Universal condition: Segment contains NO finite verb and token count <= 5
+            if not has_verb and len(tokens) <= 5:
+                # Unanchored Antecedent Subject
+                active_subject = core_clean
+                continue
+
+            stitched.append(s)
+
+        # If the text contained only an unanchored subject with no following sentence
+        if not stitched and active_subject:
+            stitched.append(f"{active_subject}.")
+
+        return stitched
 
     def _decompose_participial_phrase(self, lead: str, interposed: str) -> list[str]:
         """Decompose a participial appositive into atomic propositions across all embedded facts."""

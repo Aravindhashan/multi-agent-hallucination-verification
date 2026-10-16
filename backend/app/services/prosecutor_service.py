@@ -165,25 +165,30 @@ def prosecute_claim(
             anchors["numerical"] = claim_record.get("numerical_values", [])
             anchors["spatial"] = claim_record.get("spatial_anchors", [])
 
-    # Fallback anchor extraction using NLP claim extractor if none found
-    if not any(anchors.values()):
-        try:
-            from app.services.nlp_claim_extractor import NLPClaimExtractor
+    # Fallback anchor & SPO extraction using NLP claim extractor
+    spo: dict[str, str | None] = {"subject": None, "predicate": None, "object": None}
+    try:
+        from app.services.nlp_claim_extractor import NLPClaimExtractor
 
-            extractor = NLPClaimExtractor()
-            parsed = extractor.extract_atomic_claims(normalized_claim_text)
-            if parsed.claims:
-                first_claim = parsed.claims[0]
+        extractor = NLPClaimExtractor()
+        parsed = extractor.extract_atomic_claims(normalized_claim_text)
+        if parsed.claims:
+            first_claim = parsed.claims[0]
+            if not any(anchors.values()):
                 anchors["temporal"] = list(first_claim.temporal_anchors)
                 anchors["numerical"] = list(first_claim.numerical_values)
                 anchors["spatial"] = list(first_claim.spatial_anchors)
-        except Exception:
-            pass
+            spo["subject"] = first_claim.subject
+            spo["predicate"] = first_claim.predicate
+            spo["object"] = first_claim.object
+    except Exception:
+        pass
 
-    # Instantiate the adversarial counter-query prosecutor agent
+    # Instantiate the adversarial counter-query prosecutor agent (Pillar 2)
     prosecutor = AdvCounterQueryProsecutor(
         retriever=retriever,
         anchors=anchors,
+        spo=spo,
         verification_plan=plan,
     )
 

@@ -54,17 +54,18 @@ class PlanGuidedDefender(BaseDefender):
         base = claim_text.strip()
         parts: list[str] = []
         if self.anchors.get("temporal"):
-            parts.append(f"{', '.join(self.anchors['temporal'])}")
+            parts.append(f"with dates: {', '.join(self.anchors['temporal'])}")
         if self.anchors.get("numerical"):
-            parts.append(f"{', '.join(self.anchors['numerical'])}")
+            parts.append(f"verify quantity numbers: {', '.join(self.anchors['numerical'])}")
         if self.anchors.get("spatial"):
-            parts.append(f"{', '.join(self.anchors['spatial'])}")
+            parts.append(f"locations: {', '.join(self.anchors['spatial'])}")
+        if self.verification_plan:
+            plan_str = "; ".join(p.strip() for p in self.verification_plan if p.strip())
+            if plan_str:
+                parts.append(f"plan: {plan_str}")
 
         if parts:
-            anchor_str = " ".join(parts)
-            # Only append anchors if not already present in the base claim
-            if anchor_str.lower() not in base.lower():
-                return f"{base} {anchor_str}"
+            return f"{base} {' '.join(parts)}"
         return base
 
     def gather_supporting_evidence(

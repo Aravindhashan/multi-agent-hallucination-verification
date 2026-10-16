@@ -24,6 +24,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const stepText = document.getElementById('stepText');
     const liveTimer = document.getElementById('liveTimer');
     const uIndexBadge = document.getElementById('uIndexBadge');
+    const charCounter = document.getElementById('charCounter');
+    const responseInput = document.getElementById('response');
+    const queryInput = document.getElementById('query');
+    const modeSelect = document.getElementById('mode');
+
+    // Preset Buttons
+    const btnSampleFact = document.getElementById('btnSampleFact');
+    const btnSampleHallucination = document.getElementById('btnSampleHallucination');
+    const btnSamplePCSK9 = document.getElementById('btnSamplePCSK9');
+    const btnSampleList = document.getElementById('btnSampleList');
 
     function escapeHtml(text) {
         if (!text) return '';
@@ -35,26 +45,33 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/'/g, '&#039;');
     }
 
+    // Dynamic character counter
+    if (responseInput && charCounter) {
+        responseInput.addEventListener('input', () => {
+            charCounter.textContent = `${responseInput.value.length} chars`;
+        });
+    }
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const responseText = document.getElementById('response').value.trim();
-        const mode = document.getElementById('mode').value;
+        const responseText = responseInput.value.trim();
+        const mode = modeSelect.value;
         const debateRounds = parseInt(document.getElementById('debateRounds')?.value || "1", 10);
 
         if (!responseText) return;
 
-        // Reset UI
+        // Transition UI to loading state
         idleState.classList.add('hidden');
         resultsState.classList.add('hidden');
         loadingState.classList.remove('hidden');
         
         verifyBtn.disabled = true;
-        verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
-        statusBadge.textContent = 'Processing';
-        statusBadge.className = 'px-2.5 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 uppercase tracking-wide';
+        verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i><span class="tracking-wide text-sm">Adjudicating...</span>';
+        statusBadge.textContent = 'Adjudicating';
+        statusBadge.className = 'px-3 py-1 rounded-full text-[11px] font-mono font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider animate-pulse';
 
-        // Live stopwatch
+        // Live stopwatch and progress messaging
         const startTime = performance.now();
         if (stepText) stepText.textContent = "1/3 Decomposing passage into atomic claims...";
         
@@ -63,9 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (liveTimer) liveTimer.textContent = `Elapsed: ${elapsed}s`;
             
             if (elapsed > 1.5 && elapsed < 8.0 && stepText) {
-                stepText.textContent = `2/3 Searching internet & running debate (${mode} mode)...`;
+                stepText.textContent = `2/3 Querying federated evidence & multi-agent debate (${mode} mode)...`;
             } else if (elapsed >= 8.0 && stepText) {
-                stepText.textContent = "3/3 Cross-encoder DeBERTa-v3 adjudication...";
+                stepText.textContent = "3/3 Cross-encoder DeBERTa-v3 adjudication & calibration...";
             }
         }, 100);
 
@@ -84,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.detail || `Server returned ${res.status}`);
+                throw new Error(errData.detail || `Server returned status ${res.status}`);
             }
 
             const data = await res.json();
@@ -99,11 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingState.classList.add('hidden');
             idleState.classList.remove('hidden');
             statusBadge.textContent = 'Error';
-            statusBadge.className = 'px-2.5 py-1 rounded text-xs font-medium bg-red-100 text-red-800 uppercase tracking-wide';
+            statusBadge.className = 'px-3 py-1 rounded-full text-[11px] font-mono font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-wider';
         } finally {
             clearInterval(timerInterval);
             verifyBtn.disabled = false;
-            verifyBtn.innerHTML = '<i class="fas fa-magnifying-glass"></i> Verify Response';
+            verifyBtn.innerHTML = '<i class="fas fa-magnifying-glass text-sm"></i><span class="tracking-wide text-sm">Verify Response</span>';
         }
     });
 
@@ -111,54 +128,74 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingState.classList.add('hidden');
         resultsState.classList.remove('hidden');
         
-        statusBadge.textContent = 'Completed';
-        statusBadge.className = 'px-2.5 py-1 rounded text-xs font-medium bg-green-100 text-green-800 uppercase tracking-wide';
+        statusBadge.textContent = 'Verified';
+        statusBadge.className = 'px-3 py-1 rounded-full text-[11px] font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider';
 
         const hIndex = (data.hallucination_index !== undefined ? data.hallucination_index : 0).toFixed(2);
         hIndexValue.textContent = hIndex;
         
+        const uIndex = data.unverified_index !== undefined ? data.unverified_index : 0;
         if (hIndex <= 0.2) {
-            hIndexValue.className = 'text-4xl font-bold text-green-600';
-            hIndexLabel.textContent = 'Highly Factual';
-            hIndexLabel.className = 'text-xs font-medium mt-1 px-2 py-0.5 rounded-full bg-green-100 text-green-800';
+            hIndexValue.className = 'text-4xl font-extrabold tracking-tight font-mono text-emerald-400';
+            if (uIndex > 0) {
+                hIndexLabel.textContent = 'Factual (Coverage Gap)';
+                hIndexLabel.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/30';
+            } else {
+                hIndexLabel.textContent = 'Highly Factual';
+                hIndexLabel.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/30';
+            }
         } else if (hIndex <= 0.6) {
-            hIndexValue.className = 'text-4xl font-bold text-yellow-500';
+            hIndexValue.className = 'text-4xl font-extrabold tracking-tight font-mono text-amber-400';
             hIndexLabel.textContent = 'Partial Hallucination';
-            hIndexLabel.className = 'text-xs font-medium mt-1 px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800';
+            hIndexLabel.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/30';
         } else {
-            hIndexValue.className = 'text-4xl font-bold text-red-600';
+            hIndexValue.className = 'text-4xl font-extrabold tracking-tight font-mono text-rose-400';
             hIndexLabel.textContent = 'Severe Hallucination';
-            hIndexLabel.className = 'text-xs font-medium mt-1 px-2 py-0.5 rounded-full bg-red-100 text-red-800';
+            hIndexLabel.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-500/30';
         }
 
-        const uIndex = data.unverified_index !== undefined ? data.unverified_index : 0;
         if (uIndexBadge) {
             if (uIndex > 0) {
                 uIndexBadge.textContent = `Coverage Gap: ${(uIndex * 100).toFixed(0)}%`;
+                uIndexBadge.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/30';
                 uIndexBadge.classList.remove('hidden');
             } else {
                 uIndexBadge.classList.add('hidden');
             }
         }
 
-        overallVerdict.textContent = data.overall_verdict;
+        const refCount = data.refuted_count || 0;
+        const supCount = data.supported_count || 0;
+        const neiCount = data.unverified_count || 0;
+        const vCat = data.verdict_category || (
+            (data.overall_verdict === 'PARTIALLY_SUPPORTED' && refCount === 0) 
+                ? 'PARTIALLY_VERIFIED_COVERAGE_GAP' 
+                : (data.overall_verdict === 'PARTIALLY_SUPPORTED' && refCount > 0)
+                    ? 'PARTIALLY_SUPPORTED_CONTRADICTED'
+                    : data.overall_verdict
+        );
+
         let verdictContext = '';
-        if (data.overall_verdict === 'SUPPORTED') {
-            overallVerdict.className = 'text-2xl font-bold text-green-600 mt-1';
-        } else if (data.overall_verdict === 'REFUTED') {
-            overallVerdict.className = 'text-2xl font-bold text-red-600 mt-1';
-        } else if (data.overall_verdict === 'PARTIALLY_SUPPORTED') {
-            overallVerdict.className = 'text-2xl font-bold text-yellow-600 mt-1';
-            const refCount = data.refuted_count || 0;
-            const supCount = data.supported_count || 0;
-            const neiCount = data.unverified_count || 0;
-            if (refCount === 0) {
-                verdictContext = ` · Partially Verified (${supCount} Supported, ${neiCount} Unverified, 0 Refuted)`;
-            } else {
-                verdictContext = ` · Contradictions Detected (${supCount} Supported, ${refCount} Refuted)`;
-            }
+        if (vCat === 'SUPPORTED' || data.overall_verdict === 'SUPPORTED') {
+            overallVerdict.textContent = 'SUPPORTED';
+            overallVerdict.className = 'text-2xl font-black tracking-wide text-emerald-400 mt-0.5';
+            verdictContext = ` · Verified (${supCount} Supported, 0 Refuted)`;
+        } else if (vCat === 'PARTIALLY_VERIFIED_COVERAGE_GAP') {
+            overallVerdict.textContent = 'PARTIALLY VERIFIED';
+            overallVerdict.className = 'text-2xl font-black tracking-wide text-teal-400 mt-0.5';
+            verdictContext = ` · 0 Contradictions (${supCount} Supported, ${neiCount} Coverage Gap)`;
+        } else if (vCat === 'PARTIALLY_SUPPORTED_CONTRADICTED') {
+            overallVerdict.textContent = 'PARTIALLY SUPPORTED';
+            overallVerdict.className = 'text-2xl font-black tracking-wide text-amber-400 mt-0.5';
+            verdictContext = ` · Contradictions Detected (${supCount} Supported, ${refCount} Refuted)`;
+        } else if (vCat === 'REFUTED' || data.overall_verdict === 'REFUTED') {
+            overallVerdict.textContent = 'REFUTED';
+            overallVerdict.className = 'text-2xl font-black tracking-wide text-rose-400 mt-0.5';
+            verdictContext = ` · Contradicted (${refCount} Refuted, 0 Supported)`;
         } else {
-            overallVerdict.className = 'text-2xl font-bold text-yellow-600 mt-1';
+            overallVerdict.textContent = 'NOT ENOUGH INFO';
+            overallVerdict.className = 'text-2xl font-black tracking-wide text-slate-400 mt-0.5';
+            verdictContext = ` · Inconclusive (${neiCount} Unverified)`;
         }
 
         const confidence = data.confidence_score !== undefined ? data.confidence_score : 0;
@@ -178,16 +215,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const url = src.url;
                     
                     const titleHtml = url 
-                        ? `<a href="${encodeURI(url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline flex items-center gap-1.5 truncate"><i class="fas fa-arrow-up-right-from-square text-[10px]"></i> ${title}</a>`
-                        : `<span class="font-semibold text-gray-800 truncate">${title}</span>`;
+                        ? `<a href="${encodeURI(url)}" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:text-indigo-300 font-semibold hover:underline flex items-center gap-1.5 truncate"><i class="fas fa-arrow-up-right-from-square text-[10px]"></i> ${title}</a>`
+                        : `<span class="font-semibold text-slate-200 truncate">${title}</span>`;
                     
                     return `
-                        <div class="bg-white border border-blue-200/80 rounded-lg p-3 shadow-xs flex flex-col justify-between">
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-md flex flex-col justify-between">
                             <div class="flex items-center justify-between gap-2 mb-1.5">
                                 <div class="truncate text-xs">${titleHtml}</div>
-                                <span class="text-[10px] font-mono bg-blue-100/80 text-blue-800 px-2 py-0.5 rounded shrink-0">${domain}</span>
+                                <span class="text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded shrink-0">${domain}</span>
                             </div>
-                            ${snippet ? `<p class="text-[11px] text-gray-600 line-clamp-2 italic">"${snippet}"</p>` : ''}
+                            ${snippet ? `<p class="text-[11px] text-slate-400 line-clamp-2 italic">"${snippet}"</p>` : ''}
                         </div>
                     `;
                 }).join('');
@@ -214,48 +251,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (supportive.length > 0) {
                     supportiveHTML = supportive.map(ev => {
                         const sourceLink = ev.source_url 
-                            ? `<a href="${encodeURI(ev.source_url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline truncate">${escapeHtml(ev.source_title || ev.domain || 'Internet Source')}</a>`
-                            : `<span class="truncate">${escapeHtml(ev.source_title || ev.domain || 'Source')}</span>`;
+                            ? `<a href="${encodeURI(ev.source_url)}" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:text-emerald-300 hover:underline truncate">${escapeHtml(ev.source_title || ev.domain || 'Internet Source')}</a>`
+                            : `<span class="truncate text-slate-300">${escapeHtml(ev.source_title || ev.domain || 'Source')}</span>`;
                         const confText = ev.confidence !== null && ev.confidence !== undefined 
                             ? `${Math.round(ev.confidence * 100)}% Entails` 
                             : 'Supportive';
                         const nliMetaBadge = (ev.p_entailment !== null && ev.p_entailment !== undefined)
-                            ? `<div class="mt-2 text-[10px] text-gray-500 font-mono bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 flex flex-wrap gap-2 items-center">
-                                 <span><i class="fas fa-microchip text-indigo-500 mr-1"></i>DeBERTa: <b>${ev.token_length || '~'} tokens</b></span>
-                                 <span class="text-green-700 font-semibold">E: ${Math.round(ev.p_entailment * 100)}%</span>
-                                 <span class="text-yellow-700 font-semibold">N: ${Math.round((ev.p_neutral || 0) * 100)}%</span>
-                                 <span class="text-red-700 font-semibold">C: ${Math.round((ev.p_contradiction || 0) * 100)}%</span>
+                            ? `<div class="mt-2 text-[10px] text-slate-400 font-mono bg-slate-900/90 border border-slate-800 rounded-lg px-2 py-1 flex flex-wrap gap-2 items-center">
+                                 <span><i class="fas fa-microchip text-indigo-400 mr-1"></i>DeBERTa: <b>${ev.token_length || '~'} tokens</b></span>
+                                 <span class="text-emerald-400 font-semibold">E: ${Math.round(ev.p_entailment * 100)}%</span>
+                                 <span class="text-amber-400 font-semibold">N: ${Math.round((ev.p_neutral || 0) * 100)}%</span>
+                                 <span class="text-rose-400 font-semibold">C: ${Math.round((ev.p_contradiction || 0) * 100)}%</span>
                                </div>`
                             : '';
 
                         return `
-                            <div class="bg-white border border-green-200 rounded-lg p-3 text-xs shadow-xs">
-                                <p class="text-gray-800 leading-relaxed font-normal">"${escapeHtml(ev.text)}"</p>
+                            <div class="bg-slate-900/80 border border-emerald-500/30 rounded-xl p-3 text-xs shadow-md">
+                                <p class="text-slate-200 leading-relaxed font-normal">"${escapeHtml(ev.text)}"</p>
                                 ${nliMetaBadge}
-                                <div class="mt-2.5 flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-100">
-                                    <div class="flex items-center gap-1.5 text-gray-600 truncate mr-2">
-                                        <i class="fas fa-book-bookmark text-green-600"></i>
+                                <div class="mt-2.5 flex items-center justify-between text-[11px] pt-2 border-t border-slate-800">
+                                    <div class="flex items-center gap-1.5 text-slate-400 truncate mr-2">
+                                        <i class="fas fa-book-bookmark text-emerald-400"></i>
                                         ${sourceLink}
                                     </div>
-                                    <span class="bg-green-100 text-green-800 font-bold px-1.5 py-0.5 rounded shrink-0">${confText}</span>
+                                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono font-bold px-2 py-0.5 rounded-full shrink-0">${confText}</span>
                                 </div>
                             </div>
                         `;
                     }).join('');
                 } else if (legacySnippets.length > 0 && opposing.length === 0) {
-                    // Fallback for legacy items
                     supportiveHTML = legacySnippets.map(snip => `
-                        <div class="bg-white border border-green-200 rounded-lg p-3 text-xs shadow-xs">
-                            <p class="text-gray-800 leading-relaxed">"${escapeHtml(snip)}"</p>
-                            <div class="mt-2 text-[10px] text-gray-500 flex items-center gap-1">
-                                <i class="fas fa-check text-green-600"></i> Representative Passage
+                        <div class="bg-slate-900/80 border border-emerald-500/30 rounded-xl p-3 text-xs shadow-md">
+                            <p class="text-slate-200 leading-relaxed font-normal">"${escapeHtml(snip)}"</p>
+                            <div class="mt-2 text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                                <i class="fas fa-check text-emerald-400"></i> Representative Corroborating Passage
                             </div>
                         </div>
                     `).join('');
                 } else {
                     supportiveHTML = `
-                        <div class="text-xs text-gray-500 italic p-3 text-center bg-white/70 rounded-lg border border-dashed border-gray-200 flex items-center justify-center gap-1.5">
-                            <i class="fas fa-info-circle text-gray-400"></i> No supportive claims or passages found.
+                        <div class="text-xs text-slate-500 italic p-4 text-center bg-slate-900/40 rounded-xl border border-dashed border-slate-800 flex items-center justify-center gap-2">
+                            <i class="fas fa-info-circle text-slate-500"></i> No confirming passages retrieved.
                         </div>
                     `;
                 }
@@ -265,40 +301,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (opposing.length > 0) {
                     opposingHTML = opposing.map(ev => {
                         const sourceLink = ev.source_url 
-                            ? `<a href="${encodeURI(ev.source_url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline truncate">${escapeHtml(ev.source_title || ev.domain || 'Internet Source')}</a>`
-                            : `<span class="truncate">${escapeHtml(ev.source_title || ev.domain || 'Source')}</span>`;
+                            ? `<a href="${encodeURI(ev.source_url)}" target="_blank" rel="noopener noreferrer" class="text-rose-400 hover:text-rose-300 hover:underline truncate">${escapeHtml(ev.source_title || ev.domain || 'Internet Source')}</a>`
+                            : `<span class="truncate text-slate-300">${escapeHtml(ev.source_title || ev.domain || 'Source')}</span>`;
                         const confText = ev.confidence !== null && ev.confidence !== undefined 
                             ? `${Math.round(ev.confidence * 100)}% Refutes` 
                             : 'Opposing';
                         const nliMetaBadge = (ev.p_contradiction !== null && ev.p_contradiction !== undefined)
-                            ? `<div class="mt-2 text-[10px] text-gray-500 font-mono bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 flex flex-wrap gap-2 items-center">
-                                 <span><i class="fas fa-microchip text-indigo-500 mr-1"></i>DeBERTa: <b>${ev.token_length || '~'} tokens</b></span>
-                                 <span class="text-green-700 font-semibold">E: ${Math.round((ev.p_entailment || 0) * 100)}%</span>
-                                 <span class="text-yellow-700 font-semibold">N: ${Math.round((ev.p_neutral || 0) * 100)}%</span>
-                                 <span class="text-red-700 font-semibold">C: ${Math.round(ev.p_contradiction * 100)}%</span>
+                            ? `<div class="mt-2 text-[10px] text-slate-400 font-mono bg-slate-900/90 border border-slate-800 rounded-lg px-2 py-1 flex flex-wrap gap-2 items-center">
+                                 <span><i class="fas fa-microchip text-indigo-400 mr-1"></i>DeBERTa: <b>${ev.token_length || '~'} tokens</b></span>
+                                 <span class="text-emerald-400 font-semibold">E: ${Math.round((ev.p_entailment || 0) * 100)}%</span>
+                                 <span class="text-amber-400 font-semibold">N: ${Math.round((ev.p_neutral || 0) * 100)}%</span>
+                                 <span class="text-rose-400 font-semibold">C: ${Math.round(ev.p_contradiction * 100)}%</span>
                                </div>`
                             : '';
 
                         return `
-                            <div class="bg-white border border-red-200 rounded-lg p-3 text-xs shadow-xs">
-                                <p class="text-gray-800 leading-relaxed font-normal">"${escapeHtml(ev.text)}"</p>
+                            <div class="bg-slate-900/80 border border-rose-500/30 rounded-xl p-3 text-xs shadow-md">
+                                <p class="text-slate-200 leading-relaxed font-normal">"${escapeHtml(ev.text)}"</p>
                                 ${nliMetaBadge}
-                                <div class="mt-2.5 flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-100">
-                                    <div class="flex items-center gap-1.5 text-gray-600 truncate mr-2">
-                                        <i class="fas fa-triangle-exclamation text-red-500"></i>
+                                <div class="mt-2.5 flex items-center justify-between text-[11px] pt-2 border-t border-slate-800">
+                                    <div class="flex items-center gap-1.5 text-slate-400 truncate mr-2">
+                                        <i class="fas fa-triangle-exclamation text-rose-400"></i>
                                         ${sourceLink}
                                     </div>
-                                    <span class="bg-red-100 text-red-800 font-bold px-1.5 py-0.5 rounded shrink-0">${confText}</span>
+                                    <span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono font-bold px-2 py-0.5 rounded-full shrink-0">${confText}</span>
                                 </div>
                             </div>
                         `;
                     }).join('');
                 } else {
-                    opposingHTML = `
-                        <div class="text-xs text-gray-600 p-3 text-center bg-white/70 rounded-lg border border-dashed border-gray-200 flex items-center justify-center gap-2">
-                            <i class="fas fa-shield-halved text-green-600"></i> No opposing claims found (Prosecutor confirmed adherence to consensus).
-                        </div>
-                    `;
+                    const isConsensus = claim.consensus_confirmed || claim.verdict === 'SUPPORTED';
+                    if (isConsensus) {
+                        opposingHTML = `
+                            <div class="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-3.5 text-xs text-emerald-200 shadow-md flex items-start gap-2.5">
+                                <i class="fas fa-circle-check text-emerald-400 text-sm shrink-0 mt-0.5"></i>
+                                <div>
+                                    <span class="font-bold text-emerald-300">✓ Scientific Consensus Confirmed:</span>
+                                    <span class="text-emerald-200/90"> Exhaustive adversarial prosecutor search yielded 0 contradictory claims.</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        opposingHTML = `
+                            <div class="text-xs text-slate-500 italic p-4 text-center bg-slate-900/40 rounded-xl border border-dashed border-slate-800 flex items-center justify-center gap-2">
+                                <i class="fas fa-shield-halved text-slate-500"></i> No opposing claims found on the web.
+                            </div>
+                        `;
+                    }
                 }
 
                 // Build claim sources row
@@ -308,19 +357,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         const sTitle = escapeHtml(s.title || s.domain || 'Web Source');
                         const sDomain = escapeHtml(s.domain || 'web');
                         if (s.url) {
-                            return `<a href="${encodeURI(s.url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-[11px] text-blue-700 hover:text-blue-900 bg-blue-50/80 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-full transition-colors font-medium">
-                                <i class="fas fa-link text-[9px]"></i> <span class="max-w-[180px] truncate">${sTitle}</span> <span class="text-[9px] text-blue-500 font-mono">(${sDomain})</span>
+                            return `<a href="${encodeURI(s.url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-[11px] text-indigo-300 hover:text-indigo-200 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 px-2.5 py-1 rounded-full transition-all font-sans">
+                                <i class="fas fa-link text-[9px] text-indigo-400"></i> <span class="max-w-[180px] truncate">${sTitle}</span> <span class="text-[9px] text-indigo-400 font-mono">(${sDomain})</span>
                             </a>`;
                         }
-                        return `<span class="inline-flex items-center gap-1.5 text-[11px] text-gray-700 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-full font-medium">
-                            <i class="fas fa-file-lines text-[9px]"></i> <span class="max-w-[180px] truncate">${sTitle}</span>
+                        return `<span class="inline-flex items-center gap-1.5 text-[11px] text-slate-300 bg-slate-800/80 border border-slate-700/60 px-2.5 py-1 rounded-full font-sans">
+                            <i class="fas fa-file-lines text-[9px] text-slate-400"></i> <span class="max-w-[180px] truncate">${sTitle}</span>
                         </span>`;
                     }).join('');
 
                     claimSourcesHTML = `
-                        <div class="mt-4 pt-3 border-t border-gray-100">
-                            <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <i class="fas fa-globe text-primary"></i> Internet Sources for Claim ${idx + 1} (${claimSources.length})
+                        <div class="mt-4 pt-3 border-t border-slate-800">
+                            <div class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <i class="fas fa-globe text-indigo-400"></i> Provenance Links for Claim ${idx + 1} (${claimSources.length})
                             </div>
                             <div class="flex flex-wrap gap-1.5">
                                 ${sourceBadges}
@@ -329,30 +378,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 }
 
-                let badgeClass = 'bg-gray-100 text-gray-800 border-gray-200';
-                if (claim.verdict === 'SUPPORTED') badgeClass = 'bg-green-100 text-green-800 border-green-200';
-                if (claim.verdict === 'REFUTED') badgeClass = 'bg-red-100 text-red-800 border-red-200';
-                if (claim.verdict === 'NOT_ENOUGH_INFO') badgeClass = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                let badgeClass = 'bg-slate-800 text-slate-300 border-slate-700';
+                if (claim.verdict === 'SUPPORTED') badgeClass = 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40';
+                if (claim.verdict === 'REFUTED') badgeClass = 'bg-rose-950/80 text-rose-300 border-rose-500/40';
+                if (claim.verdict === 'NOT_ENOUGH_INFO') badgeClass = 'bg-amber-950/80 text-amber-300 border-amber-500/40';
 
                 const claimConfidence = claim.confidence_score !== undefined ? claim.confidence_score : 0;
                 const entailment = claim.support_probability !== undefined ? claim.support_probability : 0;
                 const contradiction = claim.contradiction_probability !== undefined ? claim.contradiction_probability : 0;
 
                 const claimHTML = `
-                    <div class="bg-white border border-gray-200 rounded-xl p-5 claim-card shadow-sm">
+                    <div class="glass-card rounded-2xl p-5 border border-slate-800 shadow-xl bg-slate-900/60">
                         <!-- Claim Title Header -->
-                        <div class="flex justify-between items-start gap-4 pb-3 border-b border-gray-100">
+                        <div class="flex justify-between items-start gap-4 pb-3 border-b border-slate-800">
                             <div class="flex-grow">
                                 <div class="flex items-center gap-2 mb-1.5">
-                                    <span class="text-xs font-bold text-gray-400">CLAIM ${idx + 1}</span>
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border ${badgeClass}">
+                                    <span class="text-xs font-mono font-bold text-slate-400">CLAIM ${idx + 1}</span>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${badgeClass}">
                                         ${claim.verdict}
                                     </span>
-                                    <span class="text-xs text-gray-500 font-medium">Confidence: ${(claimConfidence * 100).toFixed(0)}%</span>
+                                    <span class="text-xs font-mono text-slate-400">Confidence: ${(claimConfidence * 100).toFixed(0)}%</span>
                                 </div>
-                                <p class="text-gray-900 font-semibold text-base">${escapeHtml(claim.claim_text)}</p>
-                                <div class="mt-1.5 text-xs text-gray-500 flex items-center gap-4">
-                                    <span class="flex items-center gap-1"><i class="fas fa-microchip text-primary"></i> NLI Entailment: ${(entailment * 100).toFixed(1)}% | Contradiction: ${(contradiction * 100).toFixed(1)}%</span>
+                                <p class="text-slate-100 font-semibold text-base leading-snug">${escapeHtml(claim.claim_text)}</p>
+                                <div class="mt-2 text-xs font-mono text-slate-400 flex items-center gap-4">
+                                    <span class="flex items-center gap-1.5"><i class="fas fa-microchip text-indigo-400"></i> Entailment: <b class="text-emerald-400">${(entailment * 100).toFixed(1)}%</b> | Contradiction: <b class="text-rose-400">${(contradiction * 100).toFixed(1)}%</b></span>
                                 </div>
                             </div>
                         </div>
@@ -360,12 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <!-- Dual Column: Supportive vs Opposing Claims -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <!-- Supportive Claims Column -->
-                            <div class="bg-green-50/40 border border-green-200/80 rounded-xl p-3.5 flex flex-col">
-                                <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-green-200">
-                                    <span class="text-xs font-bold text-green-900 uppercase flex items-center gap-1.5">
-                                        <i class="fas fa-circle-check text-green-600"></i> Supportive Claims & Evidence
+                            <div class="bg-emerald-950/20 border border-emerald-500/20 rounded-xl p-3.5 flex flex-col">
+                                <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-emerald-500/20">
+                                    <span class="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                                        <i class="fas fa-shield-halved text-emerald-400"></i> Defender Corroboration
                                     </span>
-                                    <span class="text-[10px] font-bold bg-green-200 text-green-900 px-2 py-0.5 rounded-full">
+                                    <span class="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                                         ${supportive.length}
                                     </span>
                                 </div>
@@ -375,12 +424,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
 
                             <!-- Opposing Claims Column -->
-                            <div class="bg-red-50/40 border border-red-200/80 rounded-xl p-3.5 flex flex-col">
-                                <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-red-200">
-                                    <span class="text-xs font-bold text-red-900 uppercase flex items-center gap-1.5">
-                                        <i class="fas fa-circle-xmark text-red-600"></i> Opposing Claims & Evidence
+                            <div class="bg-rose-950/20 border border-rose-500/20 rounded-xl p-3.5 flex flex-col">
+                                <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-rose-500/20">
+                                    <span class="text-xs font-bold text-rose-300 uppercase tracking-wider flex items-center gap-1.5">
+                                        <i class="fas fa-scale-balanced text-rose-400"></i> Prosecutor Counter-Evidence
                                     </span>
-                                    <span class="text-[10px] font-bold bg-red-200 text-red-900 px-2 py-0.5 rounded-full">
+                                    <span class="text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full">
                                         ${opposing.length}
                                     </span>
                                 </div>
@@ -404,17 +453,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Quick demo preset button handlers
-    const btnSampleFact = document.getElementById('btnSampleFact');
-    const btnSampleHallucination = document.getElementById('btnSampleHallucination');
-    const btnSamplePCSK9 = document.getElementById('btnSamplePCSK9');
-    const responseInput = document.getElementById('response');
-    const queryInput = document.getElementById('query');
-    const modeSelect = document.getElementById('mode');
-
     if (btnSampleFact && responseInput) {
         btnSampleFact.addEventListener('click', () => {
             if (queryInput) queryInput.value = "What is the cardiovascular efficacy of Aspirin?";
             responseInput.value = "Aspirin reduces cardiovascular mortality and lowers the risk of myocardial infarction in clinical patients.";
+            if (charCounter) charCounter.textContent = `${responseInput.value.length} chars`;
             if (modeSelect) modeSelect.value = "live_web";
         });
     }
@@ -423,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSampleHallucination.addEventListener('click', () => {
             if (queryInput) queryInput.value = "Can high doses of Vitamin C cure viral infections?";
             responseInput.value = "High-dose Vitamin C cures acute viral hepatitis and completely prevents influenza virus transmission in humans.";
+            if (charCounter) charCounter.textContent = `${responseInput.value.length} chars`;
             if (modeSelect) modeSelect.value = "live_web";
         });
     }
@@ -431,6 +475,16 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSamplePCSK9.addEventListener('click', () => {
             if (queryInput) queryInput.value = "What is the genetic and clinical role of PCSK9 in hypercholesterolemia?";
             responseInput.value = "Loss-of-function mutations in the PCSK9 gene cause severe hypercholesterolemia and coronary artery disease.";
+            if (charCounter) charCounter.textContent = `${responseInput.value.length} chars`;
+            if (modeSelect) modeSelect.value = "live_web";
+        });
+    }
+
+    if (btnSampleList && responseInput) {
+        btnSampleList.addEventListener('click', () => {
+            if (queryInput) queryInput.value = "What is Nateglinide used for?";
+            responseInput.value = "* Nateglinide.\n* Used for the treatment of type 2 diabetes mellitus.";
+            if (charCounter) charCounter.textContent = `${responseInput.value.length} chars`;
             if (modeSelect) modeSelect.value = "live_web";
         });
     }

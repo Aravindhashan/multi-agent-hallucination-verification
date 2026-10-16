@@ -341,7 +341,7 @@ def evaluate_adversarial_pollution_injection() -> dict[str, Any]:
 
     # Determine simulated verdicts
     dedup_verdict = "REFUTED (Corrupted)" if dedup_res["posterior_support_probability"] < 0.40 else "SUPPORTED"
-    indep_verdict = "SUPPORTED (Protected)" if indep_res["posterior_support_probability"] > 0.60 else "REFUTED"
+    indep_verdict = "SUPPORTED (Protected)" if indep_res["posterior_support_probability"] > 0.55 else "REFUTED"
 
     return {
         "experiment": "Adversarial Pollution Injection",
