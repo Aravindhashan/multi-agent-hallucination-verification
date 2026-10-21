@@ -10,7 +10,8 @@ from app.services.nli_models import NLIConfigurationError
 class NLISettings:
     """Runtime configuration settings for DeBERTa cross-encoder NLI inference."""
 
-    model_name: str = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
+    model_name: str = "rishhh/verisci-claim-verifier-sentence-nli-seed123"
+    general_model_name: str = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
     device: str = "auto"
     max_length: int = 256
     batch_size: int = 8

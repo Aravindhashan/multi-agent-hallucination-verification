@@ -310,11 +310,11 @@ class AdjudicationService:
             else:
                 post_sup, post_con, post_neu = 0.33, 0.33, 0.34
 
-            # Determine tri-class calibrated verdict
-            if post_sup >= 0.55 and post_sup > (post_con * 1.25):
+            # Determine tri-class calibrated verdict with polar margin check
+            if post_sup >= 0.50 and post_sup > post_con:
                 verdict = AdjudicationVerdict.SUPPORTED
                 confidence = post_sup
-            elif post_con >= 0.55 and post_con > (post_sup * 1.25):
+            elif post_con >= 0.50 and post_con > post_sup:
                 verdict = AdjudicationVerdict.REFUTED
                 confidence = post_con
             else:

@@ -371,3 +371,74 @@ def select_best_sentence_window(
         sentence_count=len(winner_indices),
         total_passage_sentences=n,
     )
+
+
+def extract_candidate_sentence_windows(
+    claim: str,
+    evidence_passage: str,
+    top_candidates: int = 3,
+    context_expansion: int = 1,
+) -> list[SentenceWindow]:
+    """Extract multiple high-scoring candidate sentence windows with surrounding context.
+
+    Enables multi-candidate max-pooling across diverse evidence sentences to eliminate
+    the single-sentence recall bottleneck.
+
+    Args:
+        claim: Target factual claim to verify.
+        evidence_passage: Passage text.
+        top_candidates: Number of candidate anchor sentences to extract (default 3).
+        context_expansion: Number of adjacent sentences to include on each side (+-1).
+
+    Returns:
+        List of SentenceWindow objects for multi-candidate evaluation.
+    """
+    sentences = split_into_sentences(evidence_passage)
+    n = len(sentences)
+
+    if n == 0:
+        return []
+
+    if n <= (context_expansion * 2 + 1):
+        all_text = " ".join(sentences)
+        return [
+            SentenceWindow(
+                text=all_text,
+                sentence_indices=list(range(n)),
+                score=score_sentence(claim, all_text),
+                sentence_count=n,
+                total_passage_sentences=n,
+            )
+        ]
+
+    # Score each sentence individually
+    sentence_scores = [(idx, score_sentence(claim, s)) for idx, s in enumerate(sentences)]
+    scored_sorted = sorted(sentence_scores, key=lambda pair: pair[1], reverse=True)
+
+    seen_anchors: set[int] = set()
+    candidate_windows: list[SentenceWindow] = []
+
+    for anchor_idx, base_score in scored_sorted[:top_candidates]:
+        if anchor_idx in seen_anchors:
+            continue
+        seen_anchors.add(anchor_idx)
+
+        # Context expansion: anchor +- context_expansion
+        start = max(0, anchor_idx - context_expansion)
+        end = min(n, anchor_idx + context_expansion + 1)
+        window_indices = list(range(start, end))
+        window_text = " ".join(sentences[i] for i in window_indices)
+        win_score = score_sentence(claim, window_text)
+
+        candidate_windows.append(
+            SentenceWindow(
+                text=window_text,
+                sentence_indices=window_indices,
+                score=win_score,
+                sentence_count=len(window_indices),
+                total_passage_sentences=n,
+            )
+        )
+
+    return candidate_windows
+

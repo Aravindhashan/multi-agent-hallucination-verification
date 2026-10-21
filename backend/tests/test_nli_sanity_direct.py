@@ -142,8 +142,12 @@ HANDWRITTEN_NLI_PAIRS = [
 def raw_model_and_tokenizer() -> tuple[Any, Any, dict[int, str]]:
     """Load real DeBERTa model and tokenizer directly outside the pipeline."""
     model_name = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSequenceClassification.from_pretrained(model_name)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, local_files_only=True)
+    except Exception:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name)
     model.eval()
 
     # Dynamically extract label mapping from model config

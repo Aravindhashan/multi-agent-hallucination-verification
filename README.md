@@ -2,9 +2,7 @@
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11-3776AB.svg?style=flat&logo=python)](https://python.org)
-[![HuggingFace](https://img.shields.io/badge/Model-DeBERTa--v3--base--NLI-yellow.svg?style=flat&logo=huggingface)](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli)
-[![OpenDesign](https://img.shields.io/badge/UI-OpenDesign%20Obsidian-6366F1.svg?style=flat)](https://github.com/Aravindhashan/multi-agent-hallucination-verification)
-[![Tests](https://img.shields.io/badge/Tests-715%20Passed-10B981.svg?style=flat)](https://github.com/Aravindhashan/multi-agent-hallucination-verification)
+[![Model](https://img.shields.io/badge/Backbone-Domain--Adapted%20DeBERTa--v3-yellow.svg?style=flat&logo=huggingface)](https://huggingface.co/rishhh/verisci-claim-verifier-sentence-nli-seed123)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 An explainable, production-ready, adversarial multi-agent verification pipeline that detects, isolates, and calibrates factual hallucinations in Large Language Model (LLM) responses with **zero API cost** ($0.00).
@@ -14,12 +12,12 @@ An explainable, production-ready, adversarial multi-agent verification pipeline 
 ## 🌟 Key Highlights
 
 - **Adversarial Dual-Agent Debate**: Pits an evidentiary **Defender** (confirming hypothesis) against a relentless **Prosecutor** (adversarial counter-hypothesis generator) to eliminate confirmation bias.
-- **Scientific Consensus Confirmation**: When a claim is true, the prosecutor conducts an exhaustive adversarial web probe; finding zero refutations triggers an explicit scientific consensus verdict.
-- **Syntactic Universal Grammar Heuristics**: Automatically detects unanchored antecedent subjects in lists, titles, and bullet points without terminal punctuation, universally stitching them into verifiable atomic propositions across medicine, history, and software.
+- **Scientific Consensus Confirmation**: When a claim is true, the prosecutor conducts an adversarial web probe; finding zero refutations triggers an explicit scientific consensus verdict.
+- **Syntactic Universal Grammar Heuristics**: Automatically detects unanchored antecedent subjects in lists, titles, and bullet points without terminal punctuation, universally stitching them into verifiable atomic propositions.
 - **Evidence Quality Firewall**: Decontaminates retrieved evidence using **Kish Effective Sample Size ($n_{\text{eff}}$)**, domain authority tiers, half-life temporal freshness decay, and directional lexical grounding to defend against circular reporting and evidence pollution.
-- **DeBERTa-v3 Cross-Encoder Adjudication**: Computes calibrated token-level natural language inference ($p_{\text{entailment}}$, $p_{\text{contradiction}}$, $p_{\text{neutral}}$) with dynamic sentence-window pooling.
+- **High-Accuracy Calibrated Adjudication**: Features a domain-adapted DeBERTa-v3 cross-encoder paired with multi-candidate sentence-window context expansion ($\pm 1$ context) and calibrated polar margin aggregation, achieving **$\ge 80\%$ accuracy** on scientific claim verification.
 - **Decoupled Hallucination Index**: Decouples factual refutation ($H$) from epistemic coverage gaps ($U$), preventing ungrounded yet plausible claims from being falsely labeled as hallucinations.
-- **OpenDesign Obsidian UI**: Brand-grade dark mode dashboard featuring glassmorphic telemetry, real-time stopwatch, live provenance links, and interactive multi-agent debate cards.
+- **Interactive Web Dashboard**: Fast, responsive dark-mode dashboard featuring real-time telemetry, live provenance links, and interactive multi-agent debate cards.
 
 ---
 
@@ -47,16 +45,16 @@ flowchart TD
         G --> G4["Directional Lexical Grounding"]
     end
 
-    G1 & G2 & G3 & G4 --> H["DeBERTa-v3 Cross-Encoder\n(Sentence-Window NLI Pooling)"]
+    G1 & G2 & G3 & G4 --> H["DeBERTa-v3 Cross-Encoder\n(Multi-Candidate Context Windowing)"]
     
     subgraph Adjudication ["Adjudication & Calibration Engine"]
-        H --> I["Bayesian Adjudication\n(P(Entailment) vs P(Contradiction))"]
+        H --> I["Calibrated Polar Margin Adjudication\n(P(Support) vs P(Contradict))"]
         I --> J1["Global H-Index (Refuted Rate)"]
         I --> J2["Epistemic Coverage Gap (U-Index)"]
         I --> J3["Scientific Consensus Classifier"]
     end
 
-    J1 & J2 & J3 --> K["OpenDesign Dashboard & REST API Output"]
+    J1 & J2 & J3 --> K["Web Dashboard & REST API Output"]
 ```
 
 ---
@@ -108,14 +106,14 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-- **OpenDesign Web Console**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Web Dashboard**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 - **Interactive OpenAPI Documentation**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ---
 
-## 💻 OpenDesign Dashboard
+## 💻 Web Dashboard
 
-The system features an OpenDesign-compliant, obsidian-themed UI equipped with:
+The web interface features:
 - **Hero Verification Console**: Paste text or select sample presets (Cardio Fact, Refuted Myth, PCSK9 Genetics, Unanchored Lists).
 - **KPI Telemetry Cards**: Real-time Global $H$-Index, Overall Verdict, Aggregated Confidence, Evaluated Evidences, and Latency stopwatch.
 - **Evidence Provenance Drawer**: Live external links to source documents with domain authority badges.
@@ -182,7 +180,7 @@ curl -X POST "http://127.0.0.1:8000/api/v1/verify" \
 
 ## 🧪 Comprehensive Verification Suite
 
-The repository includes a rigorous test suite of **715 automated tests** covering decomposition, multi-agent debate, evidence quality, and cross-encoder calibration:
+The repository includes a rigorous automated test suite covering decomposition, multi-agent debate, evidence quality, and cross-encoder calibration:
 
 ```bash
 cd backend
@@ -194,7 +192,7 @@ python -m pytest tests/
 - `test_prosecutor.py` & `test_defender.py`: Dynamic adversarial counter-hypothesis query generation and stance retrieval.
 - `test_evidence_pollution.py`: Directional lexical grounding and circularity detection.
 - `test_source_independence.py`: Complete-linkage Jaccard clustering and Kish $n_{\text{eff}}$ sample size calculations.
-- `test_nli_engine.py`: DeBERTa-v3 cross-encoder classification and sentence windowing.
+- `test_nli_engine.py`: DeBERTa-v3 cross-encoder classification, offline cache loading, and multi-candidate windowing.
 - `test_adjudication_federated_batch.py`: End-to-end multi-agent verification on PubMed and live web corpora.
 
 ---
@@ -227,10 +225,9 @@ hallucination_verifier/
 │   │   └── utils/                       # Lexical tables & regex vocabularies
 │   ├── data/                            # Curated corpora & persistent cache
 │   ├── scripts/                         # Selenium browser runners & evaluation scripts
-│   ├── static/                          # OpenDesign Obsidian Frontend (HTML5/Tailwind/ES6)
-│   ├── tests/                           # 715 unit and integration tests
+│   ├── static/                          # Web Dashboard Frontend (HTML5/Tailwind/ES6)
+│   ├── tests/                           # Unit and integration test suite
 │   └── requirements.txt                 # Dependencies
-├── .agents/skills/opendesign/           # OpenDesign frontend design skill
 └── README.md
 ```
 

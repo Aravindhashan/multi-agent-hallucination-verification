@@ -35,3 +35,9 @@ backend/data/indexes/
 # OS Artifacts
 .DS_Store
 Thumbs.db
+
+# Agent skills and temporary files
+.agents/
+*.db-shm
+*.db-wal
+

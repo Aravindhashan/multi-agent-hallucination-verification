@@ -121,7 +121,7 @@ class Settings:
 
     # Phase 2 NLI Engine settings
     NLI_MODEL_NAME: str = field(
-        default_factory=lambda: os.getenv("NLI_MODEL_NAME", "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli").strip()
+        default_factory=lambda: os.getenv("NLI_MODEL_NAME", "rishhh/verisci-claim-verifier-sentence-nli-seed123").strip()
     )
     NLI_DEVICE: str = field(
         default_factory=lambda: os.getenv("NLI_DEVICE", "auto").strip().lower()
