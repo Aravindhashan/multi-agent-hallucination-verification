@@ -390,19 +390,11 @@ class NLIEngine:
                     premises.append(e)
                     extracted_windows.append(None)
 
-            # Check model convention: VeriSci models expect tokenizer(claim, premise)
-            model_name_str = getattr(getattr(self.model, "config", None), "_name_or_path", "") or str(self.config.model_name)
-            raw_labels_str = " ".join(str(v).lower() for v in getattr(getattr(self.model, "config", None), "id2label", {}).values())
-            is_verisci = (
-                "verisci" in model_name_str.lower()
-                or "scifact" in model_name_str.lower()
-                or "refute" in raw_labels_str
-                or "support" in raw_labels_str
-            ) and ("entailment" not in raw_labels_str)
-            first_seq = hypotheses if is_verisci else premises
-            second_seq = premises if is_verisci else hypotheses
-            raw_first = hypotheses if is_verisci else raw_evidence_list
-            raw_second = raw_evidence_list if is_verisci else hypotheses
+            # Standard NLI cross-encoder convention: Premise (evidence) is sequence 1, Hypothesis (claim) is sequence 2.
+            first_seq = premises
+            second_seq = hypotheses
+            raw_first = raw_evidence_list
+            raw_second = hypotheses
 
             # Raw un-truncated encodings of original input pairs for diagnostic tracking
             raw_full_encodings = self.tokenizer(

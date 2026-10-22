@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Hallucination Verifier · Video Presentation Deck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0B0F19;
+            color: #F8FAFC;
+            overflow: hidden;
+        }
+        .slide {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+            padding: 3rem 5rem;
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #A5B4FC 0%, #818CF8 50%, #C084FC 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .flow-card {
+            background: rgba(22, 31, 50, 0.7);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            transition: all 0.25s ease;
+        }
+        .flow-card:hover {
+            border-color: rgba(99, 102, 241, 0.6);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-[#0B0F19] text-slate-100 select-none">
+
+    <!-- Slide 1: Title & Hook -->
+    <section class="slide active" id="slide-1">
+        <div class="max-w-5xl mx-auto w-full text-center">
+            <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-400 font-mono text-xs font-semibold mb-6">
+                <i class="fas fa-shield-halved"></i> Multi-Agent NLP Research
+            </div>
+            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+                Explainable <span class="gradient-text">Hallucination Verification</span><br/>via Adversarial Multi-Agent Debate
+            </h1>
+            <p class="text-xl text-slate-400 max-w-3xl mx-auto font-light leading-relaxed mb-10">
+                Eliminating LLM factual hallucinations and confirmation bias through DeBERTa-v3 cross-encoders, federated evidence retrieval, and evidence quality firewalls.
+            </p>
+            <div class="flex items-center justify-center gap-8 text-sm font-mono text-slate-400 border-t border-slate-800/80 pt-8 max-w-2xl mx-auto">
+                <span class="flex items-center gap-2"><i class="fas fa-microchip text-indigo-400"></i> Zero-Cost Local Inference</span>
+                <span class="flex items-center gap-2"><i class="fas fa-check-circle text-emerald-400"></i> 715 Passed Tests</span>
+                <span class="flex items-center gap-2"><i class="fab fa-github text-slate-300"></i> Open Source</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 2: The Core Problem -->
+    <section class="slide" id="slide-2">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="text-indigo-400 font-mono text-xs font-semibold uppercase tracking-wider mb-2">The Dilemma</div>
+            <h2 class="text-4xl font-extrabold mb-8 tracking-tight">Why Standard RAG Fails in Production</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="flow-card p-6 rounded-2xl">
+                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl mb-4">
+                        <i class="fas fa-magnifying-glass-minus"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-100 mb-2">Confirmation Bias</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Standard retrievers search only for words confirming the generated prompt. They never deliberately search for contradictory medical or empirical facts.
+                    </p>
+                </div>
+
+                <div class="flow-card p-6 rounded-2xl">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl mb-4">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-100 mb-2">Echo Chambers & Pollution</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Multiple web sources frequently repeat the exact same unverified press release. Naive counts treat 5 copies as 5 independent proofs, inflating false confidence up to 3.4x.
+                    </p>
+                </div>
+
+                <div class="flow-card p-6 rounded-2xl">
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-xl mb-4">
+                        <i class="fas fa-scissors"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-100 mb-2">Syntactic Claim Fragmentation</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Lists and bullet points without periods produce orphaned nouns (e.g. <i>* Nateglinide.</i>) that standard sentence splitters cannot verify because they have no predicate.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 3: Complete Architecture (The 4 Pillars) -->
+    <section class="slide" id="slide-3">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="text-indigo-400 font-mono text-xs font-semibold uppercase tracking-wider mb-2">System Design</div>
+            <h2 class="text-4xl font-extrabold mb-8 tracking-tight">The 4-Pillar Multi-Agent Architecture</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                <div class="flow-card p-5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-mono font-bold text-indigo-400 mb-2">PILLAR 1</div>
+                        <h3 class="text-base font-bold text-slate-100 mb-2">Universal Grammar</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Detects unanchored antecedent subjects in lists and appositives; stitches them into fully verifiable atomic claims.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400">
+                        ✓ Domain Agnostic NLP
+                    </div>
+                </div>
+
+                <div class="flow-card p-5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-mono font-bold text-indigo-400 mb-2">PILLAR 2</div>
+                        <h3 class="text-base font-bold text-slate-100 mb-2">Adversarial Debate</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Defender retrieves supporting facts while Prosecutor probes counter-hypotheses. 0 refutations = <b>Scientific Consensus</b>.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400">
+                        ✓ Eliminates Bias
+                    </div>
+                </div>
+
+                <div class="flow-card p-5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-mono font-bold text-indigo-400 mb-2">PILLAR 3</div>
+                        <h3 class="text-base font-bold text-slate-100 mb-2">Evidence Firewall</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Kish Sample Size (n_eff) discounts duplicate wire articles; domain authority tiers prioritize Gov/PubMed sources.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400">
+                        ✓ ECE Under 0.10
+                    </div>
+                </div>
+
+                <div class="flow-card p-5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-mono font-bold text-indigo-400 mb-2">PILLAR 4</div>
+                        <h3 class="text-base font-bold text-slate-100 mb-2">DeBERTa & Metrics</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Cross-encoder NLI with sentence windowing outputs decoupled <b>H (Refuted)</b> and <b>U (Coverage Gap)</b>.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400">
+                        ✓ Decoupled Indices
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 4: Mathematical Metrics -->
+    <section class="slide" id="slide-4">
+        <div class="max-w-5xl mx-auto w-full">
+            <div class="text-indigo-400 font-mono text-xs font-semibold uppercase tracking-wider mb-2">Decoupled Evaluation</div>
+            <h2 class="text-4xl font-extrabold mb-8 tracking-tight">Decoupled Hallucination vs. Coverage Gap</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="glass-panel p-6 rounded-2xl border-rose-500/30">
+                    <span class="text-xs font-mono text-rose-400 font-bold uppercase tracking-wider">Metric 1</span>
+                    <h3 class="text-xl font-bold text-slate-100 mt-1 mb-2">Factual Hallucination Index (H)</h3>
+                    <div class="bg-slate-900/90 font-mono text-xs text-slate-200 p-3 rounded-xl border border-slate-800 my-3">
+                        H = (1 / |C|) · Σ max(0.75, conf_c)
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Only scales up when authoritative external evidence directly contradicts the claim.
+                    </p>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl border-amber-500/30">
+                    <span class="text-xs font-mono text-amber-400 font-bold uppercase tracking-wider">Metric 2</span>
+                    <h3 class="text-xl font-bold text-slate-100 mt-1 mb-2">Epistemic Coverage Gap (U)</h3>
+                    <div class="bg-slate-900/90 font-mono text-xs text-slate-200 p-3 rounded-xl border border-slate-800 my-3">
+                        U = (1 / |C|) · Σ max(0.50, P_neutral,c)
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Measures absence of evidence without falsely penalizing unverified facts as lies.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <span class="text-xs font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-4 py-1.5 rounded-full">
+                    Next: Transitioning to the Live OpenDesign Dashboard Demo ➔
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: Empirical Benchmarks & Wrap Up -->
+    <section class="slide" id="slide-5">
+        <div class="max-w-5xl mx-auto w-full text-center">
+            <div class="text-indigo-400 font-mono text-xs font-semibold uppercase tracking-wider mb-2">Benchmark Validation</div>
+            <h2 class="text-4xl font-extrabold mb-6 tracking-tight">Empirical Performance & Verification</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-10 text-left">
+                <div class="glass-panel p-5 rounded-2xl">
+                    <div class="text-3xl font-bold font-mono text-emerald-400 mb-1">715 / 715</div>
+                    <div class="text-xs font-bold text-slate-200 mb-1">Pytest Test Suite</div>
+                    <div class="text-[11px] text-slate-400">100% pass rate across decomposition, debate, and calibration.</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl">
+                    <div class="text-3xl font-bold font-mono text-indigo-400 mb-1">0.09 ECE</div>
+                    <div class="text-xs font-bold text-slate-200 mb-1">Expected Calibration Error</div>
+                    <div class="text-[11px] text-slate-400">Kish n_eff prevents confidence inflation from syndicated copies.</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl">
+                    <div class="text-3xl font-bold font-mono text-purple-400 mb-1">$0.00 Cost</div>
+                    <div class="text-xs font-bold text-slate-200 mb-1">Local CPU Inference</div>
+                    <div class="text-[11px] text-slate-400">Zero recurring cloud subscription or third-party LLM API fees.</div>
+                </div>
+            </div>
+
+            <div class="inline-flex items-center gap-4 bg-slate-900 border border-slate-800 px-6 py-3 rounded-2xl">
+                <i class="fab fa-github text-2xl text-slate-300"></i>
+                <span class="text-sm font-mono text-slate-200">github.com/Aravindhashan/multi-agent-hallucination-verification</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom Navigation Bar -->
+    <footer class="fixed bottom-0 left-0 right-0 p-4 flex justify-between items-center text-xs font-mono text-slate-500 bg-[#0B0F19]/90 border-t border-slate-800/60 z-50">
+        <div>Slide <span id="currentSlideNum">1</span> of 5 · [Use Left/Right Arrow Keys or Space to Navigate]</div>
+        <div class="flex gap-2">
+            <button onclick="prevSlide()" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">◀ Prev</button>
+            <button onclick="nextSlide()" class="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">Next ▶</button>
+        </div>
+    </footer>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 5;
+
+        function showSlide(n) {
+            document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(`slide-${n}`);
+            if (target) {
+                target.classList.add('active');
+                document.getElementById('currentSlideNum').textContent = n;
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                showSlide(currentSlide);
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                prevSlide();
+            }
+        });
+    </script>
+</body>
+</html>
