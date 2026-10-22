@@ -33,6 +33,14 @@ _BIOMEDICAL_KEYWORDS: frozenset[str] = frozenset(
     ]
 )
 _TOKEN_PATTERN = re.compile(r"\b\w+\b")
+_GENERIC_SCIENTIFIC_TOKENS: frozenset[str] = frozenset([
+    "clinical", "patient", "patients", "study", "studies", "trial", "trials",
+    "human", "humans", "effect", "effects", "risk", "risks", "rate", "rates",
+    "level", "levels", "treatment", "therapy", "reduce", "reduces", "reduced",
+    "lower", "lowers", "lowering", "increase", "increases", "increased",
+    "associated", "significant", "significantly", "result", "results",
+    "evidence", "group", "groups", "outcome", "outcomes", "disease", "diseases",
+])
 _ENGLISH_STOPWORDS: frozenset[str] = frozenset(
     [
         "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "aren't",
@@ -165,6 +173,12 @@ class FederatedEvidenceRetriever(BaseEvidenceRetriever):
             if t not in _ENGLISH_STOPWORDS and len(t) >= 2
         }
 
+        query_words = _TOKEN_PATTERN.findall(query)
+        entity_tokens = {
+            w.lower() for w in query_words
+            if any(c.isupper() for c in w) or any(c.isdigit() for c in w)
+        }
+
         for rank_idx, r in enumerate(raw_results, start=1):
             doc_tokens = set(_TOKEN_PATTERN.findall(f"{r.title} {r.text}".lower()))
             overlap = len(query_tokens.intersection(doc_tokens))
@@ -185,6 +199,12 @@ class FederatedEvidenceRetriever(BaseEvidenceRetriever):
                 if content_overlap < 0.25:
                     continue
                 relevance = round(min(0.90, 0.40 + 0.50 * content_overlap), 3)
+
+            # If query specifies subject entities/identifiers, penalize documents omitting them
+            if entity_tokens and not any(e in doc_tokens for e in entity_tokens):
+                relevance = round(relevance * 0.30, 3)
+                if relevance < 0.35:
+                    continue
 
             items.append(
                 EvidenceItem(
@@ -274,27 +294,37 @@ class FederatedEvidenceRetriever(BaseEvidenceRetriever):
             w.lower() for w in claim_words
             if w.lower() not in _ENGLISH_STOPWORDS and len(w) >= 3
         }
-        candidates_text = " ".join(c.text.lower() for c in candidates)
-        candidates_tokens = set(_TOKEN_PATTERN.findall(candidates_text))
+        topic_tokens = {w for w in content_tokens if w not in _GENERIC_SCIENTIFIC_TOKENS} or content_tokens
 
-        entities_grounded = (not entity_tokens) or (
-            all(e in candidates_tokens for e in entity_tokens)
-            if len(entity_tokens) <= 2
-            else (len([e for e in entity_tokens if e in candidates_tokens]) / len(entity_tokens) >= 0.70)
-        )
-        content_overlap = (
-            len(content_tokens.intersection(candidates_tokens)) / max(1, len(content_tokens))
-            if content_tokens
-            else 1.0
-        )
+        # Individual candidate grounding check:
+        # Rather than checking overlap across the union of all candidates (which can yield
+        # false positives across fragmented multi-topic papers), at least one single candidate document
+        # must ground the key entities AND achieve comprehensive topic coverage and relevance.
+        def _candidate_grounds_claim(cand: EvidenceItem) -> bool:
+            cand_tokens = set(_TOKEN_PATTERN.findall(cand.text.lower()))
+            has_entities = (not entity_tokens) or (
+                all(e in cand_tokens for e in entity_tokens)
+                if len(entity_tokens) <= 2
+                else (len([e for e in entity_tokens if e in cand_tokens]) / len(entity_tokens) >= 0.70)
+            )
+            content_overlap = (
+                len(content_tokens.intersection(cand_tokens)) / max(1, len(content_tokens))
+                if content_tokens
+                else 1.0
+            )
+            topic_overlap = (
+                len(topic_tokens.intersection(cand_tokens)) / max(1, len(topic_tokens))
+                if topic_tokens
+                else 1.0
+            )
+            return bool(
+                has_entities
+                and topic_overlap >= 0.75
+                and content_overlap >= 0.50
+                and cand.relevance_score >= self.escalation_threshold
+            )
 
-        # If candidates satisfy threshold AND ground all distinct entities and content tokens, accept benchmark
-        has_confident_evidence = bool(
-            candidates
-            and entities_grounded
-            and content_overlap >= 0.35
-            and any(c.relevance_score >= self.escalation_threshold for c in candidates)
-        )
+        has_confident_evidence = bool(candidates and any(_candidate_grounds_claim(c) for c in candidates))
 
         if has_confident_evidence:
             logger.debug(
@@ -323,7 +353,10 @@ class FederatedEvidenceRetriever(BaseEvidenceRetriever):
             for c in candidates:
                 if c.text.lower() not in seen_texts and c.relevance_score >= self.escalation_threshold:
                     merged.append(c)
-            return merged[: self.top_k]
+            # Ensure top benchmark candidate is represented for domain provenance
+            if candidates and not any(c.domain and "ncbi" in c.domain for c in merged[: self.top_k]):
+                merged.insert(1, candidates[0])
+            return merged[: max(self.top_k, min(len(merged), 4))]
 
         return candidates
 

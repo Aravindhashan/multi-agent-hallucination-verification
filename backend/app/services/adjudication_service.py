@@ -28,7 +28,10 @@ import math
 import threading
 import time
 from typing import Any, Sequence
-from urllib.parse import urlparse
+from app.utils.lexical import CANONICAL_STOPWORDS
+import re
+
+_TOKEN_PATTERN = re.compile(r"\b\w+\b")
 from uuid import UUID, uuid4
 
 from app.schemas import (
@@ -165,21 +168,31 @@ class AdjudicationService:
         eval_pairs: list[tuple[str, str]] = []
         item_metadata: list[dict[str, Any]] = []
 
-        # Process supporting cluster representatives (pruned to top 2 for low-latency CPU inference)
+        # Process supporting cluster representatives (pruned to top 4 for comprehensive coverage)
         sup_clusters_map = {
             c.representative_id: c.cluster_reliability_weight
             for c in quality_eval.supporting_report.clusters
         }
-        top_pooled_sup = sorted(
-            pooled_sup,
-            key=lambda it: (
-                sup_clusters_map.get(str(it.evidence_id))
+        claim_content_words = {
+            w.lower() for w in _TOKEN_PATTERN.findall(normalized_claim)
+            if len(w) >= 3 and w.lower() not in CANONICAL_STOPWORDS
+        }
+        def _rank_candidate(it: EvidenceItem, cluster_map: dict[str, float]) -> float:
+            base_w = (
+                cluster_map.get(str(it.evidence_id))
                 or getattr(it, "cluster_reliability_weight", None)
                 or getattr(it, "composite_score", 0.8)
                 or 0.8
-            ),
+            )
+            it_words = set(_TOKEN_PATTERN.findall(it.text.lower()))
+            overlap = len(claim_content_words.intersection(it_words)) / max(1, len(claim_content_words))
+            return 0.5 * float(base_w) + 0.5 * overlap
+
+        top_pooled_sup = sorted(
+            pooled_sup,
+            key=lambda it: _rank_candidate(it, sup_clusters_map),
             reverse=True,
-        )[:2]
+        )[:4]
         for item in top_pooled_sup:
             windowed_premise = select_best_sentence_window(normalized_claim, item.text).text or item.text
             eval_pairs.append((normalized_claim, windowed_premise))
@@ -196,21 +209,16 @@ class AdjudicationService:
                 "windowed_premise": windowed_premise,
             })
 
-        # Process contradicting cluster representatives (pruned to top 2 for low-latency CPU inference)
+        # Process contradicting cluster representatives (pruned to top 3 for comprehensive coverage)
         con_clusters_map = {
             c.representative_id: c.cluster_reliability_weight
             for c in quality_eval.contradicting_report.clusters
         }
         top_pooled_con = sorted(
             pooled_con,
-            key=lambda it: (
-                con_clusters_map.get(str(it.evidence_id))
-                or getattr(it, "cluster_reliability_weight", None)
-                or getattr(it, "composite_score", 0.8)
-                or 0.8
-            ),
+            key=lambda it: _rank_candidate(it, con_clusters_map),
             reverse=True,
-        )[:2]
+        )[:3]
         for item in top_pooled_con:
             windowed_premise = select_best_sentence_window(normalized_claim, item.text).text or item.text
             eval_pairs.append((normalized_claim, windowed_premise))
@@ -295,8 +303,17 @@ class AdjudicationService:
             raw_p_sup = combined["posterior_support_probability"]
             raw_p_con = combined["posterior_contradiction_probability"]
 
-            # Compute effective neutral share: evidence is neutral only if no item is decisive
-            weighted_neu = min(ev.p_neutral for ev in evaluated_evidence)
+            # Compute decisive evidence strength across items
+            max_ent = max(ev.p_entailment for ev in evaluated_evidence)
+            max_con = max(ev.p_contradiction for ev in evaluated_evidence)
+            max_decisive = max(max_ent, max_con)
+
+            # If evidence contains no decisive statements (all neutral/ambiguous), default to NOT_ENOUGH_INFO
+            if max_decisive < 0.25:
+                weighted_neu = max(0.60, min(ev.p_neutral for ev in evaluated_evidence))
+            else:
+                # Decisive grounding evidence exists: residual neutral uncertainty reflects uncaptured nuances
+                weighted_neu = max(0.05, min(0.35, 1.0 - max_decisive))
 
             # Calibrate 3-class distribution
             w_sup = raw_p_sup * (1.0 - weighted_neu)

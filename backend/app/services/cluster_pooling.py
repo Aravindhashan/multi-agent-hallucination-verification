@@ -175,8 +175,8 @@ def combine_nli_probabilities(
     prior_lo_sup = prob_to_log_odds(prior_prob_support)
     prior_lo_con = prob_to_log_odds(1.0 - prior_prob_support)
 
-    lo_sup_list: list[float] = []
-    lo_con_list: list[float] = []
+    lo_sup_updates: list[float] = []
+    lo_con_updates: list[float] = []
     effective_weights: list[float] = []
 
     for dist, w in zip(probs_list, weights):
@@ -191,16 +191,26 @@ def combine_nli_probabilities(
         else:
             raise ValueError(f"Unsupported NLI probability format: {dist}")
 
-        # Informativeness gating: a neutral document provides zero Bayes factor evidence
-        # for or against the claim. Scale effective weight by (1 - p_neu).
-        inf_scale = max(0.01, min(1.0, 1.0 - p_neu)) if p_neu > 0.0 else 1.0
-        effective_weights.append(w * inf_scale)
+        # In 3-class NLI, neutral mass reflects epistemic uncertainty or lack of commitment,
+        # not refutation. The relative polar balance between support and contradiction is
+        # p_polar_sup = p_ent / (p_ent + p_con). Weight the Bayesian update by decisive mass (1 - p_neu).
+        decisive_mass = p_ent + p_con
+        if decisive_mass <= 1e-4:
+            lo_sup_updates.append(0.0)
+            lo_con_updates.append(0.0)
+            effective_weights.append(0.0)
+            continue
 
-        lo_sup_list.append(prob_to_log_odds(p_ent))
-        lo_con_list.append(prob_to_log_odds(p_con))
+        p_polar_sup = p_ent / decisive_mass
+        lo_sup = prob_to_log_odds(p_polar_sup)
+        lo_sup_updates.append(lo_sup)
+        lo_con_updates.append(-lo_sup)
 
-    combined_lo_sup = combine_log_odds(lo_sup_list, effective_weights, prior_log_odds=prior_lo_sup)
-    combined_lo_con = combine_log_odds(lo_con_list, effective_weights, prior_log_odds=prior_lo_con)
+        inf_scale = max(0.01, min(1.0, decisive_mass))
+        effective_weights.append(float(w) * inf_scale)
+
+    combined_lo_sup = combine_log_odds(lo_sup_updates, effective_weights, prior_log_odds=prior_lo_sup)
+    combined_lo_con = combine_log_odds(lo_con_updates, effective_weights, prior_log_odds=prior_lo_con)
 
     post_p_sup = log_odds_to_prob(combined_lo_sup)
     post_p_con = log_odds_to_prob(combined_lo_con)
